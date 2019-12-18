@@ -6,14 +6,15 @@ class T {
 	static T* (*getInstance)();
 	friend ostream& operator<< (ostream&, const T&);
 
-  private:
-	string data;
-	static T* instance;
-
+  protected:
 	T();
 	T(const T&) = delete;
 	T& operator= (const T&) = delete;
 	~T() = default;
+
+  private:
+	string data;
+	static T* instance;
 
 	static T* f1();
 	static T* f2();
