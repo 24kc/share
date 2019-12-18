@@ -9,19 +9,19 @@ class T {
   private:
 	string data;
 	static T* instance;
-	static T* (*getInstancePrivate)();
+	static T& (*getInstancePrivate)();
 
 	T();
 	T(const T&) = delete;
 	T& operator= (const T&) = delete;
 	~T() = default;
 
-	static T* f1();
-	static T* f2();
+	static T& f1();
+	static T& f2();
 };
 
 T* T::instance;
-T* (*T::getInstancePrivate)() = T::f1;
+T& (*T::getInstancePrivate)() = T::f1;
 
 T::T()
 {
@@ -32,10 +32,10 @@ T::T()
 T&
 T::getInstance()
 {
-	return *getInstancePrivate();
+	return getInstancePrivate();
 }
 
-T*
+T&
 T::f1()
 {
 	instance = new T();
@@ -43,10 +43,10 @@ T::f1()
 	return getInstancePrivate();
 }
 
-T*
+T&
 T::f2()
 {
-	return instance;
+	return *instance;
 }
 
 ostream&
