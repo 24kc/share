@@ -53,6 +53,7 @@ T::f1()
 		instance = new T();
 		getInstancePrivate = f2;
 	}
+	guard.~lock_guard();
 	return getInstancePrivate();
 }
 
