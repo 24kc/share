@@ -3,12 +3,13 @@ using namespace std;
 
 class T {
   public:
-	static T* (*getInstance)();
+	static T* getInstance();
 	friend ostream& operator<< (ostream&, const T&);
 
   private:
 	string data;
 	static T* instance;
+	static T* (*getInstancePrivate)();
 
 	T();
 	T(const T&) = delete;
@@ -19,8 +20,8 @@ class T {
 	static T* f2();
 };
 
-T* (*T::getInstance)() = T::f1;
 T* T::instance;
+T* (*T::getInstancePrivate)() = T::f1;
 
 T::T()
 {
@@ -29,11 +30,17 @@ T::T()
 }
 
 T*
+T::getInstance()
+{
+	return getInstancePrivate();
+}
+
+T*
 T::f1()
 {
 	instance = new T();
-	getInstance = f2;
-	return getInstance();
+	getInstancePrivate = f2;
+	return getInstancePrivate();
 }
 
 T*
