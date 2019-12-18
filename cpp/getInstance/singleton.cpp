@@ -36,7 +36,6 @@ T::f1()
 	return getInstance();
 }
 
-inline
 T*
 T::f2()
 {
