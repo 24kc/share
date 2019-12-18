@@ -1,4 +1,7 @@
-#include <iostream>
+#ifndef _SINGLETON_H_
+#define _SINGLETON_H_
+
+namespace akm {
 using namespace std;
 
 class T {
@@ -56,11 +59,7 @@ operator<< (ostream& out, const T& t)
 	return out;
 }
 
-int main()
-{
-	T &t1 = T::getInstance();
-	T &t2 = T::getInstance();
-	cout<<t1<<endl;
-	cout<<t2<<endl;
-}
+} // namespace akm;
+
+#endif
 
