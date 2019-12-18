@@ -3,7 +3,7 @@ using namespace std;
 
 class T {
   public:
-	static T* getInstance();
+	static T& getInstance();
 	friend ostream& operator<< (ostream&, const T&);
 
   private:
@@ -29,10 +29,10 @@ T::T()
 	data = "ABC傻逼";
 }
 
-T*
+T&
 T::getInstance()
 {
-	return getInstancePrivate();
+	return *getInstancePrivate();
 }
 
 T*
@@ -58,9 +58,9 @@ operator<< (ostream& out, const T& t)
 
 int main()
 {
-	T *t = T::getInstance();
-	T *t1 = T::getInstance();
-	cout<<*t<<endl;
-	cout<<*t1<<endl;
+	T &t1 = T::getInstance();
+	T &t2 = T::getInstance();
+	cout<<t1<<endl;
+	cout<<t2<<endl;
 }
 
