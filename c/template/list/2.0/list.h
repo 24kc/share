@@ -53,8 +53,8 @@ int list_load (list*, const char *file_name);
 	/* 打开file_name文件, 读取list_save保存的链表数据 */
 	/* 打开文件失败返回0, 成功返回非0 */
 
-void list_write (list*, FILE *fp); /* 把链表数据写入fp */
-void list_read (list*, FILE *fp); /* 从fp读取链表数据 */
+int list_write (list*, FILE *fp); /* 把链表数据写入fp */
+int list_read (list*, FILE *fp); /* 从fp读取链表数据 */
 
 int
 list_init (list *this)
@@ -221,53 +221,68 @@ list_pop_front (list *this)
 	return list_erase(this, list_first(this));
 }
 
-void
+int
 list_write (list *this, FILE *fp)
 {
+	int r;
 	type *t = list_first(this);
 
-	fwrite(&this->size, sizeof(int), 1, fp);
+	r = fwrite(&this->size, sizeof(int), 1, fp);
+	if ( r != 1 )
+		return 0;
 	while (t != list_tail(this)) {
-		fwrite(t, sizeof(type), 1, fp);
+		r = fwrite(t, sizeof(type), 1, fp);
+		if ( r != 1 )
+			return 0;
 		t = list_next(this, t);
 	}
+	return 1;
 }
 
-void
+int
 list_read (list *this, FILE *fp)
 {
-	int i, size;
+	int i, r, size;
 	type t;
 
-	fread(&size, sizeof(int), 1, fp);
+	r = fread(&size, sizeof(int), 1, fp);
+	if ( r != 1 )
+		return 0;
 	for (i=0; i<size; ++i) {
-		fread(&t, sizeof(type), 1, fp);
+		r = fread(&t, sizeof(type), 1, fp);
+		if ( r != 1 )
+			return 0;
 		list_push_back(this, &t);
 	}
+	return 1;
 }
 
 int
 list_save (list *this, const char *file_name)
 {
+	int r;
 	FILE *fp;
 	fp = fopen(file_name, "w");
 	if ( ! fp )
 		return 0;
-	list_write(this, fp);
+	r = list_write(this, fp);
 	fclose(fp);
-	return 1;
+	return r;
 }
 
 int
 list_load (list *this, const char *file_name)
 {
+	int r;
 	FILE *fp;
 	fp = fopen(file_name, "r");
 	if ( ! fp )
 		return 0;
-	list_read(this, fp);
+	r = list_read(this, fp);
+	if ( ! r )
+		list_clear(this);
 	fclose(fp);
-	return 1;
+	return r;
 }
 
 static int (*list_sort_origin_cmp) (const type*, const type*) = NULL;
