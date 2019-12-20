@@ -48,12 +48,13 @@ T::getInstance()
 T&
 T::f1()
 {
-	lock_guard<mutex> guard(init_mutex);
-	if ( getInstancePrivate == f1 ) {
-		instance = new T();
-		getInstancePrivate = f2;
+	{
+		lock_guard<mutex> guard(init_mutex);
+		if ( getInstancePrivate == f1 ) {
+			instance = new T();
+			getInstancePrivate = f2;
+		}
 	}
-	guard.~lock_guard();
 	return getInstancePrivate();
 }
 
