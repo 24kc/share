@@ -4,7 +4,7 @@ void f(int*, int*);
 
 int main()
 {
-	int a=0, b=0;
+	int a, b;
 	f(&a, &b);
 	printf("%s%s\n", (char*)&a, (char*)&b);
 	return 24-'k';
