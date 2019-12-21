@@ -57,69 +57,69 @@ int list_write (list*, FILE *fp); /* 把链表数据写入fp */
 int list_read (list*, FILE *fp); /* 从fp读取链表数据 */
 
 int
-list_init (list *L)
+list_init (list *this)
 {
-	L->head = (Node*) malloc ( sizeof(Node) );
-	if ( ! L->head )
+	this->head = (Node*) malloc ( sizeof(Node) );
+	if ( ! this->head )
 		return 0;
-	L->tail = (Node*) malloc ( sizeof(Node) );
-	if ( ! L->tail ) {
-		free ( L->head );
+	this->tail = (Node*) malloc ( sizeof(Node) );
+	if ( ! this->tail ) {
+		free ( this->head );
 		return 0;
 	}
-	L->head->prev = NULL;
-	L->head->next = L->tail;
-	L->tail->prev = L->head;
-	L->tail->next = NULL;
-	L->size = 0;
+	this->head->prev = NULL;
+	this->head->next = this->tail;
+	this->tail->prev = this->head;
+	this->tail->next = NULL;
+	this->size = 0;
 	return 1;
 }
 
 void
-list_destroy (list *L)
+list_destroy (list *this)
 {
-	Node *node = L->head->next, *tmp_node = node;
+	Node *node = this->head->next, *tmp_node = node;
 
-	while (node != L->tail) {
+	while (node != this->tail) {
 		tmp_node = node->next;
 		free(node);
 		node = tmp_node;
 	}
 
-	free(L->head);
-	free(L->tail);
+	free(this->head);
+	free(this->tail);
 
-	L->head = NULL;
-	L->tail = NULL;
-	L->size = 0;
+	this->head = NULL;
+	this->tail = NULL;
+	this->size = 0;
 }
 
 type*
-list_first (list *L)
+list_first (list *this)
 {
-	return &L->head->next->data;
+	return &this->head->next->data;
 }
 
 type*
-list_last (list *L)
+list_last (list *this)
 {
-	return &L->tail->prev->data;
+	return &this->tail->prev->data;
 }
 
 type*
-list_head (list *L)
+list_head (list *this)
 {
-	return &L->head->data;
+	return &this->head->data;
 }
 
 type*
-list_tail (list *L)
+list_tail (list *this)
 {
-	return &L->tail->data;
+	return &this->tail->data;
 }
 
 type*
-list_prev (list *L, type *t)
+list_prev (list *this, type *t)
 {
 	Node *node = (Node*)t;
 	if ( ! node->prev )
@@ -128,7 +128,7 @@ list_prev (list *L, type *t)
 }
 
 type*
-list_next (list *L, type *t)
+list_next (list *this, type *t)
 {
 	Node *node = (Node*)t;
 	if ( ! node->next )
@@ -137,33 +137,33 @@ list_next (list *L, type *t)
 }
 
 int
-list_empty (list *L)
+list_empty (list *this)
 {
-	if ( L->size )
+	if ( this->size )
 		return 0;
 	return 1;
 }
 
 int
-list_size (list *L)
+list_size (list *this)
 {
-	return L->size;
+	return this->size;
 }
 
 void
-list_clear (list *L)
+list_clear (list *this)
 {
-	list_destroy(L);
-	list_init(L);
+	list_destroy(this);
+	list_init(this);
 }
 
 int
-list_insert (list *L, type *t, const type *ct)
+list_insert (list *this, type *t, const type *ct)
 {
 	Node *node, *new_node;
 
 	node = (Node*)t;
-	if ( node == L->head )
+	if ( node == this->head )
 		return 0;
 
 	new_node = (Node*) malloc ( sizeof(Node) );
@@ -176,71 +176,71 @@ list_insert (list *L, type *t, const type *ct)
 	new_node->prev = node->prev;
 	node->prev = new_node;
 	new_node->prev->next = new_node;
-	++L->size;
+	++this->size;
 
 	return 1;
 }
 
 int
-list_erase (list *L, type *t)
+list_erase (list *this, type *t)
 {
 	Node *node = (Node*)t;
-	if ( node == L->head || node == L->tail )
+	if ( node == this->head || node == this->tail )
 		return 0;
 
 	node->next->prev = node->prev;
 	node->prev->next = node->next;
 	free(node);
-	--L->size;
+	--this->size;
 
 	return 1;
 }
 
 
 int
-list_push_back (list *L, const type *t)
+list_push_back (list *this, const type *t)
 {
-	return list_insert(L, list_tail(L), t);
+	return list_insert(this, list_tail(this), t);
 }
 
 int
-list_push_front (list *L, const type *t)
+list_push_front (list *this, const type *t)
 {
-	return list_insert(L, list_first(L), t);
+	return list_insert(this, list_first(this), t);
 }
 
 int
-list_pop_back (list *L)
+list_pop_back (list *this)
 {
-	return list_erase(L, list_last(L));
+	return list_erase(this, list_last(this));
 }
 
 int
-list_pop_front (list *L)
+list_pop_front (list *this)
 {
-	return list_erase(L, list_first(L));
+	return list_erase(this, list_first(this));
 }
 
 int
-list_write (list *L, FILE *fp)
+list_write (list *this, FILE *fp)
 {
 	int r;
-	type *t = list_first(L);
+	type *t = list_first(this);
 
-	r = fwrite(&L->size, sizeof(int), 1, fp);
+	r = fwrite(&this->size, sizeof(int), 1, fp);
 	if ( r != 1 )
 		return 0;
-	while (t != list_tail(L)) {
+	while (t != list_tail(this)) {
 		r = fwrite(t, sizeof(type), 1, fp);
 		if ( r != 1 )
 			return 0;
-		t = list_next(L, t);
+		t = list_next(this, t);
 	}
 	return 1;
 }
 
 int
-list_read (list *L, FILE *fp)
+list_read (list *this, FILE *fp)
 {
 	int i, r, size;
 	type t;
@@ -252,35 +252,35 @@ list_read (list *L, FILE *fp)
 		r = fread(&t, sizeof(type), 1, fp);
 		if ( r != 1 )
 			return 0;
-		list_push_back(L, &t);
+		list_push_back(this, &t);
 	}
 	return 1;
 }
 
 int
-list_save (list *L, const char *file_name)
+list_save (list *this, const char *file_name)
 {
 	int r;
 	FILE *fp;
 	fp = fopen(file_name, "w");
 	if ( ! fp )
 		return 0;
-	r = list_write(L, fp);
+	r = list_write(this, fp);
 	fclose(fp);
 	return r;
 }
 
 int
-list_load (list *L, const char *file_name)
+list_load (list *this, const char *file_name)
 {
 	int r;
 	FILE *fp;
 	fp = fopen(file_name, "r");
 	if ( ! fp )
 		return 0;
-	r = list_read(L, fp);
+	r = list_read(this, fp);
 	if ( ! r )
-		list_clear(L);
+		list_clear(this);
 	fclose(fp);
 	return r;
 }
@@ -295,35 +295,35 @@ list_sort_cmp (const void *p1, const void *p2)
 }
 
 void
-list_sort (list *L, int (*cmp)(const type*, const type*))
+list_sort (list *this, int (*cmp)(const type*, const type*))
 {
 	int i, size;
 	type *t, **array;
 	Node *node;
 
-	size = list_size(L);
+	size = list_size(this);
 	if ( size < 2 )
 		return;
 
 	array = (type**)malloc(sizeof(type*) * size);
 
-	t = list_first(L);
+	t = list_first(this);
 	for (i=0; i<size; ++i) {
 		array[i] = t;
-		t = list_next(L, t);
+		t = list_next(this, t);
 	}
 
 	list_sort_origin_cmp = cmp;
 	qsort(array, size, sizeof(type*), list_sort_cmp);
 
 	node = (Node*)array[0];
-	L->head->next = node;
-	node->prev = L->head;
+	this->head->next = node;
+	node->prev = this->head;
 	node->next = (Node*)array[1];
 
 	node = (Node*)array[size-1];
-	L->tail->prev = node;
-	node->next = L->tail;
+	this->tail->prev = node;
+	node->next = this->tail;
 	node->prev = (Node*)array[size-2];
 
 	for (i=1; i<size-1; ++i) {
