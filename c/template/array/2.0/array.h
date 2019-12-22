@@ -3,7 +3,7 @@
 #else
 
 #include <stdio.h> // FILE, fwrite, fread
-#include <stdlib.h> // malloc, free
+#include <stdlib.h> // malloc, free, qsort
 #include <string.h> // memset
 #include <stdarg.h> // va_list
 
@@ -18,14 +18,15 @@ int array_add (array *arr, const type t); // 增加一个元素到数组末尾
 // a.length 数组长度
 // a.data[i] 访问或设置元素
 int array_insert (array *arr, int index, const type t); // 在index处插入一个元素t
-int array_insert_many (array *arr, int index, int n, ...); // 插入多个元素
+int array_insert_many (array *arr, int index, int n, type *ta); // 插入多个元素
 int array_remove (array*, int index); // 删除index处元素
+int array_remove_many (array*, int index, int n); // 删除index处开始的n个元素
 int array_set_length (array*, int new_length); // 设置数组长度
 void array_clear (array*); // 删除数组内所有元素
-void delete_array(array*); // 释放数组内存
+void delete_array (array*); // 释放数组内存
+void array_sort (array*, int (*cmp)(const type*, const type*)); // 根据cmp给数组排序
 
 static int array_reserve (array*, int new_cap); // 扩容数组
-static int array_vinsert_many (array*, int index, int n, va_list ap); // 通过va_list插入多个元素
 
 array
 new_array (int n, ...)
@@ -33,15 +34,16 @@ new_array (int n, ...)
 	array a;
 
 	va_list ap;
-	va_start(ap, n);
 
 	a.data = (type*) malloc (10 * sizeof(type));
 	a.length = 0;
 	a.capacity = 10;
 
-	array_vinsert_many(&a, 0, n, ap);
-
-	va_end(ap);
+	if ( n > 0 ) {
+		va_start(ap, n);
+		array_insert_many(&a, 0, n, va_arg(ap, type*));
+		va_end(ap);
+	}
 
 	return a;
 }
@@ -100,18 +102,7 @@ array_insert (array *arr, int index, const type t)
 }
 
 int
-array_insert_many (array *arr, int index, int n, ...)
-{
-	int r;
-	va_list ap;
-	va_start(ap, n);
-	r = array_vinsert_many(arr, index, n, ap);
-	va_end(ap);
-	return r;
-}
-
-int
-array_vinsert_many (array *arr, int index, int n, va_list ap)
+array_insert_many (array *arr, int index, int n, type *ta)
 {
 	int i;
 	int new_length = arr->length + n;
@@ -123,10 +114,8 @@ array_vinsert_many (array *arr, int index, int n, va_list ap)
 		return 0;
 	p = arr->data + index;
 	memmove(p+n, p, (arr->length - index) * sizeof(type));
-	for (i=0; i<n; ++i) {
-// char error
-		p[i] = va_arg(ap, type);
-	}
+	for (i=0; i<n; ++i)
+		p[i] = ta[i];
 	arr->length += n;
 	return 1;
 }
@@ -134,12 +123,20 @@ array_vinsert_many (array *arr, int index, int n, va_list ap)
 int
 array_remove (array *arr, int index)
 {
+	return array_remove_many(arr, index, 1);
+}
+
+int
+array_remove_many (array *arr, int index, int n)
+{
 	type *p;
-	if ( index < 0 || index >= arr->length )
+	if ( index < 0 || index >= arr->length || n < 1 )
 		return 0;
+	if ( index + n > arr->length )
+		n = arr->length - index;
 	p = arr->data + index;
-	--arr->length;
-	memmove(p, p+1, (arr->length - index) * sizeof(type));
+	arr->length -= n;
+	memmove(p, p+n, (arr->length - index) * sizeof(type));
 	return 1;
 }
 
@@ -153,6 +150,12 @@ void
 array_clear (array *arr)
 {
 	array_set_length(arr, 0);
+}
+
+void
+array_sort (array *arr, int (*cmp)(const type*, const type*))
+{
+	qsort(arr->data, arr->length, sizeof(type), (int (*)(const void*, const void*))cmp);
 }
 
 #undef type
