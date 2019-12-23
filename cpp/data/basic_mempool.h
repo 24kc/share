@@ -28,9 +28,9 @@ class basic_mempool{
 	void destroy(); // 释放内存, 销毁内存池
 	void reset(); // 清空内存分配记录, 重置内存池
 
-	int size(){return mp_size - index_size;} // 返回内存池中已租用内存块数量
-	int capacity(){return mp_capacity;} // 返回内存池容量(以T大小为单位)
-	int empty(){return mp_size==index_size;} // 是否有已租用的内存
+	int size(); // 返回内存池中已租用内存块数量
+	int capacity(); // 返回内存池容量(以T大小为单位)
+	int empty(); // 是否有已租用的内存
 
 	void write_file(FILE *fp);
 	void read_file(FILE *fp);
@@ -47,7 +47,6 @@ class basic_mempool{
 } //namespace akm
 
 #undef __t
-#undef OFF_NULL
 
 #endif //_BASIC_MEMPOOL_H_
 
