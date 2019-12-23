@@ -4,13 +4,14 @@
 #include "basic_mempool.h"
 
 #define __t(T)		template <typename T>
+#define NODE(diff)	( (Node*) bmp.getptr( diff ) )
 
 namespace akm {
 
 __t(T)
 class static_list {
 
-	class Node {
+	struct Node {
 		T data;
 		int prev;
 		int next;
@@ -34,8 +35,17 @@ static_list<T>::static_list()
 	bmp.init(10);
 	head = bmp.alloc();
 	tail = bmp.alloc();
-	((Node*)getptr(head))->prev = OFF_NULL;
+	NODE(head)->prev = OFF_NULL;
+	NODE(head)->next = tail;
+	NODE(tail)->prev = head;
+	NODE(tail)->next = OFF_NULL;
 	list_size = 0;
+}
+
+__t(T)
+static_list<T>::~static_list()
+{
+	bmp.destroy();
 }
 
 } // namespace akm;
