@@ -34,8 +34,8 @@ class basic_mempool{
 	int capacity() const; // 返回内存池容量(以T大小为单位)
 	bool empty() const; // 是否未租用内存, 或租用的内存均已返还
 
-	void write(ostream& out) const; // 把内存池数据写入out, 还需out.write(this)
-	void read(istream& in); // 需要in.read(this), init(). 再从文件read数据到内存池
+	void write(ostream& out) const; // 把内存池数据写入out
+	void read(istream& in); // 从in读取内存池数据
 
   private:
 	mp_size_t *base; // (base+1)指向存储元素的内存, (base+0)为非法内存
@@ -209,6 +209,10 @@ basic_mempool<T>::write(ostream& out) const
 	if ( ! mp_capacity )
 		return;
 
+	basic_mempool<T> bmp(*this);
+	bmp.base = NULL;
+	bmp.index = NULL;
+	out.write((char*)&bmp, sizeof(bmp));
 	out.write((char*)(base+1), sizeof(mp_size_t) * mp_capacity);
 	out.write((char*)index, sizeof(int) * mp_capacity);
 }
@@ -217,9 +221,12 @@ __t(T)
 void
 basic_mempool<T>::read(istream& in)
 {
+	destroy();
+	in.read((char*)this, sizeof(*this));
 	if ( ! mp_capacity )
 		return;
 
+	init();
 	in.read((char*)(base+1), sizeof(mp_size_t) * mp_capacity);
 	in.read((char*)index, sizeof(int) * mp_capacity);
 }

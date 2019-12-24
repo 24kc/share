@@ -259,7 +259,7 @@ void
 static_list<T>::read( istream& in )
 {
 	in.read((char*)this, sizeof(*this));
-	bmp.init();
+	new (&bmp) basic_mempool<T>();
 	bmp.read(in);
 }
 
@@ -282,6 +282,7 @@ static_list<T>::load( const string& file_name )
 	ifstream in(file_name, ios::binary);
 	if ( ! in.is_open() )
 		return 0;
+	this->~static_list<T>();
 	read(in);
 	in.close();
 	return 1;
