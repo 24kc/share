@@ -4,20 +4,22 @@ using namespace std;
 using namespace akm;
 
 typedef struct {
-	char data[32];
-} Stu;
+	int id;
+	char name[32];
+	int weight;
+	char comment[32];
+} Data;
+#include "data.h"
 
 int main()
 {
-	static_list<Stu> L;
+	int N = sizeof(data) / sizeof(Data);
+	static_list<Data> L;
 
-	Stu stu;
-	for (int i=0; i<100; ++i) {
-		sprintf(stu.data, "ABC is sb %d !", i);
-		L.push_back(stu);
+	for (int i=0; i<N; ++i) {
+		L.push_back(data[i]);
 	}
 
-	L.save("1.akmdb");
-
+	L.save("data.akmdb");
 }
 

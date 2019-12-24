@@ -4,17 +4,21 @@ using namespace std;
 using namespace akm;
 
 typedef struct {
-	char data[32];
-} Stu;
+	int id;
+	char name[32];
+	int weight;
+	char comment[32];
+} Data;
 
 int main()
 {
-	static_list<Stu> L;
+	static_list<Data> L;
 
-	L.load("1.akmdb");
+	L.load("data.akmdb");
 
-	for (auto &x : L)
-		cout<<x.data<<endl;
-
+	// select * from data;
+	for (auto &x : L) {
+		cout<<x.id<<' '<<x.name<<' '<<x.weight<<' '<<x.comment<<'\n';
+	}
 }
 

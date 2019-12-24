@@ -9,6 +9,8 @@
 #define NODE(diff)	( (Node*) bmp.getptr( diff ) )
 #define INODE(diff)	( (Node*) container->bmp.getptr( diff ) )
 
+#define TEST printf("line = %d\n", __LINE__);
+
 namespace akm {
 using string = std::string;
 using istream = std::istream;
@@ -410,6 +412,7 @@ static_list<T>::iterator::operator-> ()
 #undef __t
 #undef NODE
 #undef INODE
+#undef TEST
 
 #endif // _STATIC_LIST_H_
 
