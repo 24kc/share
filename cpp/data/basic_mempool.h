@@ -12,7 +12,7 @@ namespace akm{
 __t(T)
 class basic_mempool{
 
-	class mp_size_t { T t; };
+	struct mp_size_t { T t; };
 
   public:
 	basic_mempool(); // 不构建内存池, 需要使用init(count)来构建内存池
@@ -23,17 +23,17 @@ class basic_mempool{
 	void free(int off); // 把内存还给内存池
 	void* getptr(int off); // 通过alloc()返回的偏移获取[临时]内存地址
 
-	int init(int count = 0); // 构建内存池,初始容量为count个T大小; 若参数不填,则count为capacity();
-	int resize(int count); // 调整内存池大小,缩小内存池时会清空内存分配记录、重置内存池; count=0时同destroy();
+	bool init(int count = 0); // 构建内存池,初始容量为count个T大小; 若参数不填,则count为capacity();
+	bool resize(int count); // 调整内存池容量大小,缩小内存池时会清空内存租用记录、重置内存池; count=0时同destroy();
 	void destroy(); // 释放内存, 销毁内存池
-	void reset(); // 清空内存分配记录, 重置内存池
+	void reset(); // 清空内存租用记录, 重置内存池
 
 	int size(); // 返回内存池中已租用内存块数量
 	int capacity(); // 返回内存池容量(以T大小为单位)
-	int empty(); // 是否有已租用的内存
+	bool empty(); // 是否有已租用的内存
 
-	void write_file(FILE *fp);
-	void read_file(FILE *fp);
+	bool write_file(FILE *fp); // 把内存池数据写入fp, 还需fwrite(this)
+	bool read_file(FILE *fp); // 需要fread(this), init(). 再从文件read数据到内存池
 
   private:
 	mp_size_t *base; // (base+1)指向存储元素的内存, (base+0)为非法内存
@@ -93,7 +93,7 @@ basic_mempool<T>::getptr(int off)
 }
 
 __t(T)
-int
+bool
 basic_mempool<T>::init(int count)
 {
 	if ( ! count ) {
@@ -126,7 +126,7 @@ basic_mempool<T>::init(int count)
 }
 
 __t(T)
-int
+bool
 basic_mempool<T>::resize(int count)
 {
 	void *p;
@@ -188,30 +188,48 @@ basic_mempool<T>::capacity()
 }
 
 __t(T)
-int
+bool
 basic_mempool<T>::empty()
 {
 	return mp_size == index_size;
 }
 
 __t(T)
-void
+bool
 basic_mempool<T>::write_file(FILE *fp)
 {
 	if ( ! mp_capacity )
-		return;
-	fwrite(base+1, sizeof(mp_size_t), mp_size, fp);
-	fwrite(index, sizeof(int), index_size, fp);
+		return 0;
+
+	int r;
+	r = fwrite(base+1, sizeof(mp_size_t), mp_size, fp);
+	if ( r != mp_size )
+		return 0;
+
+	r = fwrite(index, sizeof(int), index_size, fp);
+	if ( r != index_size )
+		return 0;
+
+	return 1;
 }
 
 __t(T)
-void
+bool
 basic_mempool<T>::read_file(FILE *fp)
 {
 	if ( ! mp_capacity )
-		return;
-	fread(base+1, sizeof(mp_size_t), mp_size, fp);
-	fread(index, sizeof(int), index_size, fp);
+		return 0;
+
+	int r;
+	r = fread(base+1, sizeof(mp_size_t), mp_size, fp);
+	if ( r != mp_size )
+		return 0;
+
+	r = fread(index, sizeof(int), index_size, fp);
+	if ( r != index_size )
+		return 0;
+
+	return 1;
 }
 
 } // namespace akm;

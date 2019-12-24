@@ -21,6 +21,8 @@ class static_list {
 	static_list();
 	~static_list();
 
+	class iterator;
+
   private:
 	int head;
 	int tail;
@@ -47,6 +49,15 @@ static_list<T>::~static_list()
 {
 	bmp.destroy();
 }
+
+
+// iterator
+__t(T)
+class static_list<T>::iterator {
+  public:
+	iterator& operator= (const iterator& it);
+//	int operator!=
+};
 
 } // namespace akm;
 
