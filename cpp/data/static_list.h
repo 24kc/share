@@ -55,11 +55,51 @@ static_list<T>::~static_list()
 __t(T)
 class static_list<T>::iterator {
   public:
-	iterator& operator= (const iterator& it);
-//	int operator!=
+	iterator& operator= (const iterator& other);
+	bool operator!= (const iterator& other) const;
+	bool operator== (const iterator& other) const;
+	iterator& operator++ ();
+	iterator operator++ (int);
+	iterator& operator-- ();
+	iterator operator-- (int);
+	T& operator* ();
+
+  private:
+	int node;
 };
 
+__t(T)
+typename static_list<T>::iterator&
+static_list<T>::iterator::operator= (const iterator& other)
+{
+	node = other.node;
+}
+/*
+__t(T)
+bool
+static_list<T>::iterator::operator!= (const iterator& other) const
+{
+	return this.node != other.node;
+}
+
+__t(T)
+bool
+static_list<T>::iterator::operator== (const iterator& other) const
+{
+	return this.node == other.node;
+}
+
+__t(T)
+static_list<T>::iterator&
+static_list<T>::iterator::operator++ ()
+{
+	node = NODE(node)->next;
+}
+*/
 } // namespace akm;
+
+#undef __t
+#undef NODE
 
 #endif // _STATIC_LIST_H_
 

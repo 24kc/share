@@ -1,13 +1,14 @@
 #ifndef _BASIC_MEMPOOL_H_
 #define _BASIC_MEMPOOL_H_
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
 
 #define __t(T)		template <typename T>
 #define OFF_NULL	(0)
 
 namespace akm{
+using istream = std::istream;
+using ostream = std::ostream;
 
 __t(T)
 class basic_mempool{
@@ -32,8 +33,8 @@ class basic_mempool{
 	int capacity(); // 返回内存池容量(以T大小为单位)
 	bool empty(); // 是否有已租用的内存
 
-	bool write_file(FILE *fp); // 把内存池数据写入fp, 还需fwrite(this)
-	bool read_file(FILE *fp); // 需要fread(this), init(). 再从文件read数据到内存池
+	void write(ostream& out); // 把内存池数据写入out, 还需out.write(this)
+	void read(istream& in); // 需要in.read(this), init(). 再从文件read数据到内存池
 
   private:
 	mp_size_t *base; // (base+1)指向存储元素的内存, (base+0)为非法内存
@@ -195,41 +196,25 @@ basic_mempool<T>::empty()
 }
 
 __t(T)
-bool
-basic_mempool<T>::write_file(FILE *fp)
+void
+basic_mempool<T>::write(ostream& out)
 {
 	if ( ! mp_capacity )
-		return 0;
+		return;
 
-	int r;
-	r = fwrite(base+1, sizeof(mp_size_t), mp_size, fp);
-	if ( r != mp_size )
-		return 0;
-
-	r = fwrite(index, sizeof(int), index_size, fp);
-	if ( r != index_size )
-		return 0;
-
-	return 1;
+	out.write((char*)(base+1), sizeof(mp_size_t) * mp_size);
+	out.write((char*)index, sizeof(int) * index_size);
 }
 
 __t(T)
-bool
-basic_mempool<T>::read_file(FILE *fp)
+void
+basic_mempool<T>::read(istream& in)
 {
 	if ( ! mp_capacity )
-		return 0;
+		return;
 
-	int r;
-	r = fread(base+1, sizeof(mp_size_t), mp_size, fp);
-	if ( r != mp_size )
-		return 0;
-
-	r = fread(index, sizeof(int), index_size, fp);
-	if ( r != index_size )
-		return 0;
-
-	return 1;
+	in.read((char*)(base+1), sizeof(mp_size_t) * mp_size);
+	in.read((char*)index, sizeof(int) * index_size);
 }
 
 } // namespace akm;
