@@ -21,5 +21,5 @@ delete: delete.cpp
 
 .PHONY: clean
 clean:
-	rm reset select delete
+	rm reset select delete sort
 

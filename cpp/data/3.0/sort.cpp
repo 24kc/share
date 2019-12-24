@@ -18,7 +18,8 @@ int main()
 
 	L.load(akmdb);
 
-	L.sort([](x,y)->{ x.id > y.id });
+	// select * from data order by weight;
+	L.sort([](const Data& x, const Data& y){ return x.weight < y.weight; });
 
 	L.save(akmdb);
 }

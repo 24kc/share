@@ -63,7 +63,12 @@ class static_list {
 	int tail;
 
 	basic_mempool<Node> bmp;
+
+	static bool (*sort_cmp)(const T&, const T&);
 };
+
+__t(T)
+bool (*static_list<T>::sort_cmp)(const T&, const T&);
 
 /* iterator */
 __t(T)
@@ -299,11 +304,14 @@ static_list<T>::sort(bool (*cmp)(const T&, const T&))
 		++it;
 	}
 
-	qsort(array, sz, sizeof(T*), [cmp](const void* x, const void* y)
+	sort_cmp = cmp;
+
+	qsort(array, sz, sizeof(T*), [](const void* x, const void* y)
 	{
+
 		T& a = **(T**)x;
 		T& b = **(T**)y;
-		return cmp(b, a) - cmp(a, b);
+		return sort_cmp(b, a) - sort_cmp(a, b);
 	});
 
 	auto base = (Node*)bmp.baseptr();
@@ -313,7 +321,7 @@ static_list<T>::sort(bool (*cmp)(const T&, const T&))
 	NODE(node)->prev = head;
 	NODE(node)->next = (Node*)array[1] - base;
 
-	node = (Node*)array[sz-1] - bmp.baseptr();
+	node = (Node*)array[sz-1] - base;
 	NODE(tail)->prev = node;
 	NODE(node)->next = tail;
 	NODE(node)->prev = (Node*)array[sz-2] - base;
