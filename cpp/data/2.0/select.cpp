@@ -20,5 +20,8 @@ int main()
 	for (auto &x : L) {
 		cout<<x.id<<' '<<x.name<<' '<<x.weight<<' '<<x.comment<<'\n';
 	}
+
+	cout<<"\nQuery OK !"<<endl;
+	cout<<L.size()<<" rows in set"<<endl;
 }
 

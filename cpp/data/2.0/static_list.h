@@ -187,14 +187,14 @@ __t(T)
 bool
 static_list<T>::empty() const
 {
-	return bmp.empty();
+	return size() == 0;
 }
 
 __t(T)
 int
 static_list<T>::size() const
 {
-	return bmp.size();
+	return bmp.size() - 2;
 }
 
 __t(T)
@@ -343,6 +343,7 @@ static_list<T>::iterator::operator= (const iterator& other)
 {
 	node = other.node;
 	container = other.container;
+	return *this;
 }
 
 __t(T)
