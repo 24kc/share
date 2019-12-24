@@ -7,8 +7,8 @@
 #define OFF_NULL	(0)
 
 namespace akm{
-using istream = std::istream;
-using ostream = std::ostream;
+using std::istream;
+using std::ostream;
 
 __t(T)
 class basic_mempool{
@@ -23,6 +23,7 @@ class basic_mempool{
 	int alloc(); // 向内存池租用内存, 返回偏移, 可通过getptr()获取地址
 	void free(int off); // 把内存还给内存池
 	void* getptr(int off) const; // 通过alloc()返回的偏移获取[临时]内存地址
+	void* baseptr() const; // 获取内存池临时[基址], 即getptr(0)
 
 	bool init(int count = 0); // 构建内存池,初始容量为count个T大小; 若参数不填,则count为capacity();
 	bool resize(int count); // 调整内存池容量大小,缩小内存池时会清空内存租用记录、重置内存池; count=0时同destroy();
@@ -31,7 +32,7 @@ class basic_mempool{
 
 	int size() const; // 返回内存池中已租用内存块数量
 	int capacity() const; // 返回内存池容量(以T大小为单位)
-	bool empty() const; // 是否有已租用的内存
+	bool empty() const; // 是否未租用内存, 或租用的内存均已返还
 
 	void write(ostream& out) const; // 把内存池数据写入out, 还需out.write(this)
 	void read(istream& in); // 需要in.read(this), init(). 再从文件read数据到内存池
@@ -91,6 +92,13 @@ void*
 basic_mempool<T>::getptr(int off) const
 {
 	return (void*)(base + off);
+}
+
+__t(T)
+void*
+basic_mempool<T>::baseptr() const
+{
+	return getptr(0);
 }
 
 __t(T)

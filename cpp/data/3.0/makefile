@@ -1,7 +1,11 @@
 CC := g++ -Wall -pedantic-errors
 
 .PHONY: all
-all: reset select delete
+all: reset select delete sort
+
+.PHONY: sort
+sort: sort.cpp
+	$(CC) sort.cpp -o sort
 
 .PHONY: reset
 reset: reset.cpp

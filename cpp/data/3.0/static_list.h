@@ -12,12 +12,12 @@
 #define TEST printf("line = %d\n", __LINE__);
 
 namespace akm {
-using string = std::string;
-using istream = std::istream;
-using ostream = std::ostream;
-using ifstream = std::ifstream;
-using ofstream = std::ofstream;
-using ios = std::ios;
+using std::string;
+using std::istream;
+using std::ostream;
+using std::ifstream;
+using std::ofstream;
+using std::ios;
 
 __t(T)
 class static_list {
@@ -30,7 +30,6 @@ class static_list {
 
   public:
 	class iterator;
-	using const_iterator = const iterator;
 
 	static_list();
 	~static_list();
@@ -39,21 +38,19 @@ class static_list {
 	iterator end();
 	iterator rbegin();
 	iterator rend();
-	const_iterator cbegin() const;
-	const_iterator cend() const;
-	const_iterator crbegin() const;
-	const_iterator crend() const;
 
 	bool empty() const;
 	int size() const;
 
 	void clear();
-	iterator insert( const_iterator pos, const T& value );
-	iterator erase( const_iterator pos );
+	iterator insert( iterator pos, const T& value );
+	iterator erase( iterator pos );
 	void push_back( const T& value );
 	void pop_back();
 	void push_front( const T& value );
 	void pop_front();
+
+	void sort(bool (*cmp)(const T&, const T&));
 
 	void write( ostream& out ) const;
 	void read( istream& in );
@@ -84,8 +81,8 @@ class static_list<T>::iterator {
 	iterator& operator-- ();
 	iterator operator++ (int);
 	iterator operator-- (int);
-	T& operator* ();
-	T* operator-> ();
+	T& operator* () const;
+	T* operator-> () const;
 
   private:
 	int node;
@@ -148,42 +145,6 @@ static_list<T>::rend()
 }
 
 __t(T)
-typename static_list<T>::const_iterator
-static_list<T>::cbegin() const
-{
-	iterator it(this);
-	it.node = NODE(head)->next;
-	return it;
-}
-
-__t(T)
-typename static_list<T>::const_iterator
-static_list<T>::cend() const
-{
-	iterator it(this);
-	it.node = tail;
-	return it;
-}
-
-__t(T)
-typename static_list<T>::const_iterator
-static_list<T>::crbegin() const
-{
-	iterator it(this);
-	it.node = NODE(tail)->prev;
-	return it;
-}
-
-__t(T)
-typename static_list<T>::const_iterator
-static_list<T>::crend() const
-{
-	iterator it(this);
-	it.node = head;
-	return it;
-}
-
-__t(T)
 bool
 static_list<T>::empty() const
 {
@@ -206,11 +167,11 @@ static_list<T>::clear()
 
 __t(T)
 typename static_list<T>::iterator
-static_list<T>::insert(const_iterator pos, const T& value)
+static_list<T>::insert(iterator pos, const T& value)
 {
 	iterator it(this);
 
-	if ( pos == crend() )
+	if ( pos == rend() )
 		return it;
 
 	auto node = bmp.alloc();
@@ -233,11 +194,11 @@ static_list<T>::insert(const_iterator pos, const T& value)
 
 __t(T)
 typename static_list<T>::iterator
-static_list<T>::erase(const_iterator pos)
+static_list<T>::erase(iterator pos)
 {
 	iterator it(this);
 
-	if ( pos == cend() || pos == crend() )
+	if ( pos == end() || pos == rend() )
 		return it;
 
 	auto prev = NODE(pos.node)->prev;
@@ -256,28 +217,28 @@ __t(T)
 void
 static_list<T>::push_back( const T& value )
 {
-	insert(cend(), value);
+	insert(end(), value);
 }
 
 __t(T)
 void
 static_list<T>::pop_back()
 {
-	erase(crbegin());
+	erase(rbegin());
 }
 
 __t(T)
 void
 static_list<T>::push_front( const T& value )
 {
-	insert(cbegin(), value);
+	insert(begin(), value);
 }
 
 __t(T)
 void
 static_list<T>::pop_front()
 {
-	erase(cbegin());
+	erase(begin());
 }
 
 __t(T)
@@ -319,6 +280,51 @@ static_list<T>::load( const string& file_name )
 	read(in);
 	in.close();
 	return 1;
+}
+
+__t(T)
+void
+static_list<T>::sort(bool (*cmp)(const T&, const T&))
+{
+	int sz = size();
+	if ( sz < 2 )
+		return;
+
+	using TP = T*;
+	auto array = new TP[sz];
+
+	auto it = begin();
+	for (int i=0; i<sz; ++i) {
+		array[i] = &(*it);
+		++it;
+	}
+
+	qsort(array, sz, sizeof(T*), [cmp](const void* x, const void* y)
+	{
+		T& a = **(T**)x;
+		T& b = **(T**)y;
+		return cmp(b, a) - cmp(a, b);
+	});
+
+	auto base = (Node*)bmp.baseptr();
+
+	int node = (Node*)array[0] - base;
+	NODE(head)->next = node;
+	NODE(node)->prev = head;
+	NODE(node)->next = (Node*)array[1] - base;
+
+	node = (Node*)array[sz-1] - bmp.baseptr();
+	NODE(tail)->prev = node;
+	NODE(node)->next = tail;
+	NODE(node)->prev = (Node*)array[sz-2] - base;
+
+	for (int i=0; i<sz-1; ++i) {
+		node = (Node*)array[i] - base;
+		NODE(node)->prev = (Node*)array[i-1] - base;
+		NODE(node)->next = (Node*)array[i+1] - base;
+	}
+
+	delete[] array;
 }
 
 
@@ -396,14 +402,14 @@ static_list<T>::iterator::operator-- (int)
 
 __t(T)
 T&
-static_list<T>::iterator::operator* ()
+static_list<T>::iterator::operator* () const
 {
 	return INODE(node)->data;
 }
 
 __t(T)
 T*
-static_list<T>::iterator::operator-> ()
+static_list<T>::iterator::operator-> () const
 {
 	return &INODE(node)->data;
 }
@@ -413,6 +419,7 @@ static_list<T>::iterator::operator-> ()
 #undef __t
 #undef NODE
 #undef INODE
+
 #undef TEST
 
 #endif // _STATIC_LIST_H_
