@@ -17,5 +17,5 @@ delete: delete.cpp
 
 .PHONY: clean
 clean:
-	rm reset select delete data.akmdb
+	rm reset select delete
 

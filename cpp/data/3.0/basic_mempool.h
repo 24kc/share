@@ -201,8 +201,8 @@ basic_mempool<T>::write(ostream& out) const
 	if ( ! mp_capacity )
 		return;
 
-	out.write((char*)(base+1), sizeof(mp_size_t) * mp_size);
-	out.write((char*)index, sizeof(int) * index_size);
+	out.write((char*)(base+1), sizeof(mp_size_t) * mp_capacity);
+	out.write((char*)index, sizeof(int) * mp_capacity);
 }
 
 __t(T)
@@ -212,8 +212,8 @@ basic_mempool<T>::read(istream& in)
 	if ( ! mp_capacity )
 		return;
 
-	in.read((char*)(base+1), sizeof(mp_size_t) * mp_size);
-	in.read((char*)index, sizeof(int) * index_size);
+	in.read((char*)(base+1), sizeof(mp_size_t) * mp_capacity);
+	in.read((char*)index, sizeof(int) * mp_capacity);
 }
 
 } // namespace akm;
