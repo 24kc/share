@@ -69,9 +69,11 @@ class static_list {
 /* iterator */
 __t(T)
 class static_list<T>::iterator {
+	friend static_list<T>;
+
   public:
 	iterator();
-	iterator(static_list<T>*);
+	iterator(const static_list<T>*);
 
 	iterator& operator= (const iterator& other);
 	bool operator!= (const iterator& other) const;
@@ -85,7 +87,7 @@ class static_list<T>::iterator {
 
   private:
 	int node;
-	static_list<T> *container;
+	const static_list<T> *container;
 };
 
 
@@ -147,28 +149,36 @@ __t(T)
 typename static_list<T>::const_iterator
 static_list<T>::cbegin() const
 {
-	return begin();
+	iterator it(this);
+	it.node = NODE(head)->next;
+	return it;
 }
 
 __t(T)
 typename static_list<T>::const_iterator
 static_list<T>::cend() const
 {
-	return end();
+	iterator it(this);
+	it.node = tail;
+	return it;
 }
 
 __t(T)
 typename static_list<T>::const_iterator
 static_list<T>::crbegin() const
 {
-	return rbegin();
+	iterator it(this);
+	it.node = NODE(tail)->prev;
+	return it;
 }
 
 __t(T)
 typename static_list<T>::const_iterator
 static_list<T>::crend() const
 {
-	return rend();
+	iterator it(this);
+	it.node = head;
+	return it;
 }
 
 __t(T)
@@ -320,7 +330,7 @@ static_list<T>::iterator::iterator()
 }
 
 __t(T)
-static_list<T>::iterator::iterator(static_list<T> *container)
+static_list<T>::iterator::iterator(const static_list<T> *container)
 {
 	this->container = container;
 }
