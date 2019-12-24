@@ -22,18 +22,18 @@ class basic_mempool{
 
 	int alloc(); // 向内存池租用内存, 返回偏移, 可通过getptr()获取地址
 	void free(int off); // 把内存还给内存池
-	void* getptr(int off); // 通过alloc()返回的偏移获取[临时]内存地址
+	void* getptr(int off) const; // 通过alloc()返回的偏移获取[临时]内存地址
 
 	bool init(int count = 0); // 构建内存池,初始容量为count个T大小; 若参数不填,则count为capacity();
 	bool resize(int count); // 调整内存池容量大小,缩小内存池时会清空内存租用记录、重置内存池; count=0时同destroy();
 	void destroy(); // 释放内存, 销毁内存池
 	void reset(); // 清空内存租用记录, 重置内存池
 
-	int size(); // 返回内存池中已租用内存块数量
-	int capacity(); // 返回内存池容量(以T大小为单位)
-	bool empty(); // 是否有已租用的内存
+	int size() const; // 返回内存池中已租用内存块数量
+	int capacity() const; // 返回内存池容量(以T大小为单位)
+	bool empty() const; // 是否有已租用的内存
 
-	void write(ostream& out); // 把内存池数据写入out, 还需out.write(this)
+	void write(ostream& out) const; // 把内存池数据写入out, 还需out.write(this)
 	void read(istream& in); // 需要in.read(this), init(). 再从文件read数据到内存池
 
   private:
@@ -88,7 +88,7 @@ basic_mempool<T>::free(int off)
 
 __t(T)
 void*
-basic_mempool<T>::getptr(int off)
+basic_mempool<T>::getptr(int off) const
 {
 	return (void*)(base + off);
 }
@@ -175,28 +175,28 @@ basic_mempool<T>::reset()
 
 __t(T)
 int
-basic_mempool<T>::size()
+basic_mempool<T>::size() const
 {
 	return mp_size - index_size;
 }
 
 __t(T)
 int
-basic_mempool<T>::capacity()
+basic_mempool<T>::capacity() const
 {
 	return mp_capacity;
 }
 
 __t(T)
 bool
-basic_mempool<T>::empty()
+basic_mempool<T>::empty() const
 {
 	return mp_size == index_size;
 }
 
 __t(T)
 void
-basic_mempool<T>::write(ostream& out)
+basic_mempool<T>::write(ostream& out) const
 {
 	if ( ! mp_capacity )
 		return;
