@@ -130,11 +130,10 @@ __t(T)
 bool
 basic_mempool<T>::resize(int count)
 {
-	void *p;
 	if ( count < mp_capacity )
 		reset();
 
-	p = realloc(index, sizeof(int) * count);
+	void *p = realloc(index, sizeof(int) * count);
 	if ( ! p )
 		return 0;
 	index = (int*)p;

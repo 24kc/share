@@ -7,5 +7,6 @@ int main()
 {
 	static_list<int> L;
 	static_list<int>::iterator it;
+	++it;
 }
 
