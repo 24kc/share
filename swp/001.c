@@ -10,8 +10,8 @@ int main()
 	return 0;
 }
 
-
-void change(int a[2])
+void
+change(int a[2])
 {
 	int tmp = a[0];
 	a[0] = a[1];
