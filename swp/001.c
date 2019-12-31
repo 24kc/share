@@ -28,10 +28,8 @@ int main()
 	printf("请输入要插入的数字: ");
 	scanf("%d",&z);
 	for(i=0;i<n;i++)
-	{
 		if(z < a[i])
 			break;
-	}
 	for (j=n; j>i; --j)
 		a[j] = a[j-1];
 	a[i] = z;
