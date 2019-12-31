@@ -17,5 +17,5 @@ string24k.o: string24k.c string24k.h
 
 .PHONY: clean
 clean:
-	rm *.o
+	rm cli_box.o levens.o string24k.o
 
