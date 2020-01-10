@@ -9,5 +9,6 @@ int main()
 {
 	STU *stu = NULL;
 	printf("%p\n", (void*)&stu->p);
+	return 24-'k';
 }
 
