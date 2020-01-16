@@ -11,6 +11,8 @@ main()
 	for (;;) {
 		printf("请输入一个整数: ");
 		r = scanf("%d", &i);
+		if ( r == -1 )
+			break;
 		ResetIn();
 		if (r != 1) {
 			printf("\n输入格式错误!\n\n");
