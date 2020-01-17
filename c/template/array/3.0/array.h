@@ -14,10 +14,10 @@ typedef struct {
 }array;
 
 array new_array(int n, ...); // 初始化数组, 并设置n个元素
-int array_add (array *arr, const type t); // 增加一个元素到数组末尾
+int array_add (array *arr, type const t); // 增加一个元素到数组末尾
 // a.length 数组长度
 // a.data[i] 访问或设置元素
-int array_insert (array *arr, int index, const type t); // 在index处插入一个元素t
+int array_insert (array *arr, int index, type const t); // 在index处插入一个元素t
 int array_insert_many (array *arr, int index, int n, type *ta); // 插入多个元素
 int array_remove (array*, int index); // 删除index处元素
 int array_remove_many (array*, int index, int n); // 删除index处开始的n个元素
@@ -87,7 +87,7 @@ array_set_length (array *arr, int new_length)
 }
 
 int
-array_insert (array *arr, int index, const type t)
+array_insert (array *arr, int index, type const t)
 {
 	type *p;
 	if ( index < 0 || index > arr->length )
@@ -141,7 +141,7 @@ array_remove_many (array *arr, int index, int n)
 }
 
 int
-array_add (array *arr, const type t)
+array_add (array *arr, type const t)
 {
 	return array_insert(arr, arr->length, t);
 }
