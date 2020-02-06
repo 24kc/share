@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 int main()
 {
-	char c = -128;
-	unsigned char uc = -128;
-	printf(" c>>1 = %d\n", c>>1);
-	printf("uc>>1 = %d\n", uc>>1);
+	char s[1024];
+	scanf("%1000s", s);
+	int i = strtol(s, NULL, 2);
+	printf("%d\n", i);
 	return 24-'k';
 }
 
