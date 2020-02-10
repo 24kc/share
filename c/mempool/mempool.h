@@ -22,9 +22,12 @@ typedef struct {
 mempool* mp_init (void*, int);
 void mp_destroy (mempool*);
 
-void* mp_alloc (mempool*, int);
+void* mp_malloc (mempool*, int);
+void* mp_realloc (mempool*, void*, int);
 void mp_free (mempool*, void*);
 
 int mp_capacity (mempool*);
+
+void mp_check(mempool*);
 
 #endif

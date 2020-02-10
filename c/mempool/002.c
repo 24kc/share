@@ -13,15 +13,16 @@ int main()
 	mp_check(mp);
 	print_mp(mp);
 
-	void *p;
-
-	p = mp_malloc(mp, 400);
-	mp_malloc(mp, 416);
+	puts("\nint *p = (int*)mp_malloc(mp, 8);\n");
+	int *p = (int*)mp_malloc(mp, 8);
 	mp_check(mp);
+
 	print_mp(mp);
 
-	p = mp_realloc(mp, p, 14);
+	puts("\nmp_free(mp, p);\n");
+	mp_free(mp, p);
 	mp_check(mp);
+
 	print_mp(mp);
 }
 
@@ -39,11 +40,13 @@ print_mp(mempool *mp)
 		if ( ! nalloc && ! nfree )
 			continue;
 		if ( flag )
-			printf("  ");
+			printf(", ");
 		flag = 1;
-		printf("{<%d>", mp->list[i].capacity);
+		printf("{<%d> ", mp->list[i].capacity);
 		if ( nfree ) {
 			printf("f(%d)", nfree);
+			if ( nalloc )
+				putchar(' ');
 		}
 		if ( nalloc ) {
 			printf("a(%d)", nalloc);
@@ -53,7 +56,7 @@ print_mp(mempool *mp)
 				ml = ml->prev;
 				printf("%d", ml->size);
 				if ( ml->prev )
-					printf(",");
+					printf(", ");
 			}
 			printf("]");
 		}
