@@ -1,6 +1,6 @@
-#mempool  
+# mempool  
 
-##`mempool* mp_init (void*, int);`  
+## `mempool* mp_init (void*, int);`  
 ##`void mp_destroy (mempool*);`  
 
 ##`void* mp_malloc (mempool*, int);`  
