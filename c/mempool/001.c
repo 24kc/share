@@ -1,46 +1,77 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define type int
-#include "static_list.h"
+#include "mempool.h"
 
-#define N  (1000)
+#define N  (1200)
+
+void print_mp(mempool*); // 输出内存池信息
 
 int main()
 {
-	static_list *sl = sl_init(malloc(N), N);
-	printf("sl_size = %d\n", sl_size(sl));
+	mempool *mp = mp_init(malloc(N), N);
+	print_mp(mp);
 
-	int i;
-	sl_node_t *list = sl_alloc(sl);
-	list->data = 24;
-	for (i=0; i<100; ++i) {
-		sl_node_t *p = sl_alloc(sl);
-		if ( ! p )
-			break;
-		p->data = i * 100;
-		sl_next_add(list, p);
+	puts("int *p = (int*)mp_alloc(mp, 8);\n");
+	int *p = (int*)mp_alloc(mp, 8);
+
+	print_mp(mp);
+
+	puts("mp_free(mp, p);\n");
+	mp_free(mp, p);
+
+	print_mp(mp);
+}
+
+int list_prev_num(mp_node_t*);
+int list_next_num(mp_node_t*);
+
+void
+print_mp(mempool *mp)
+{
+	printf("[capacity] = %d\n", mp_capacity(mp));
+	for (int i=mp->list_num-1; i>=0; --i) {
+		int nalloc = list_prev_num(&mp->list[i]);
+		int nfree = list_next_num(&mp->list[i]);
+		if ( ! nalloc && ! nfree )
+			continue;
+		printf("<%d>:\n", mp->list[i].capacity);
+		if ( nfree )
+			printf("free: %d\n", nfree);
+		if ( nalloc ) {
+			printf("alloc: %d ", nalloc);
+			mp_node_t *ml = &mp->list[i];
+			printf("[");
+			while ( ml->prev ) {
+				ml = ml->prev;
+				printf("%d, ", ml->size);
+			}
+			printf("]");
+			puts("");
+		}
+		puts("");
 	}
+}
 
-	sl_node_t *p = list;
-	do {
-		printf("%d ", p->data);
-		p = p->next;
-	} while ( p );
-	puts("");
-
-	p = list->next;
-	for (i=0; i<10; ++i) {
-		sl_node_t *p1 = p->next;
-		sl_prev_del(p1);
-		sl_free(sl, p);
-		p = p1;
+int
+list_prev_num(mp_node_t *ml)
+{
+	int n = 0;
+	while ( ml->prev ) {
+		++n;
+		ml = ml->prev;
 	}
+	return n;
+}
 
-	p = list;
-	do {
-		printf("%d ", p->data);
-		p = p->next;
-	} while ( p );
-	puts("");
+int
+list_next_num(mp_node_t *ml)
+{
+	int n = 0;
+	while ( ml->next ) {
+		++n;
+		ml = ml->next;
+	}
+	return n;
 }
 
