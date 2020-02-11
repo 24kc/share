@@ -13,8 +13,8 @@ int main()
 	mp_check(mp);
 	print_mp(mp);
 
-	puts("\nint *p = (int*)mp_malloc(mp, 8);\n");
-	int *p = (int*)mp_malloc(mp, 8);
+	puts("\nint *p = (int*)mp_alloc(mp, 8);\n");
+	int *p = (int*)mp_alloc(mp, 8);
 	mp_check(mp);
 
 	print_mp(mp);

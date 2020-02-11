@@ -16,8 +16,8 @@ int main()
 
 	void *p, *p1;
 
-	p = mp_malloc(mp, 400);
-	p1 = mp_malloc(mp, 416);
+	p = mp_alloc(mp, 400);
+	p1 = mp_alloc(mp, 416);
 	mp_check(mp);
 	print_mp(mp);
 

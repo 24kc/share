@@ -16,19 +16,22 @@ typedef struct mp_node_t{
 typedef struct {
 	mp_node_t *list; // some lists store the released nodes
 	int list_num;
+	int nothrow;
 	void *begin, *end; // mempool
 } mempool;
 
 mempool* mp_init (void*, int);
 void mp_destroy (mempool*);
 
-void* mp_malloc (mempool*, int);
+void* mp_alloc (mempool*, int);
 void* mp_realloc (mempool*, void*, int);
 void mp_free (mempool*, void*);
 
 int mp_capacity (mempool*);
 void* mp_max_block (mempool*, int*, int);
 
-void mp_check(mempool*);
+void mp_check (mempool*);
+void* mp_alloc_nothrow (mempool*, int);
+void* mp_realloc_nothrow (mempool*, void*, int);
 
 #endif
