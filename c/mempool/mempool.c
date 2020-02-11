@@ -198,6 +198,29 @@ mp_capacity(mempool *mp)
 	return mp->end - mp->begin;
 }
 
+void*
+mp_max_block(mempool *mp, int *p_size, int flag)
+{
+	for (int i=mp->list_num-1; i>=0; --i) {
+		mp_node_t *head = &mp->list[i];
+		if ( head->next ) {
+			int max = head->capacity - NODE_SIZE;
+			if ( ! flag ) {
+				*p_size = max;
+				return NULL;
+			}
+			mp_node_t *node = head->next;
+			ml_del_next(head);
+			node->size = max;
+			ml_add_prev(head, node);
+			*p_size = max;
+			return node+1;
+		}
+	}
+	*p_size = 0;
+	return NULL;
+}
+
 void
 mp_node_init(mp_node_t *node, int size)
 {
@@ -317,7 +340,7 @@ mp_check_list(mp_node_t *ml)
 		p1 = p->prev;
 		assert(p1->next == p);
 		assert(p1->capacity == ml->capacity);
-		assert(p1->size >= 0);
+		assert(0 <= p1->size && p1->size <= ml->capacity - NODE_SIZE);
 		p = p1;
 	}
 }

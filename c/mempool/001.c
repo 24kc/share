@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #define type int
 #include "mempool.h"
+#include <string.h>
 
 #define N  (1200)
 
@@ -13,16 +14,27 @@ int main()
 	mp_check(mp);
 	print_mp(mp);
 
-	void *p;
+	void *p, *p1;
 
 	p = mp_malloc(mp, 400);
-	mp_malloc(mp, 416);
+	p1 = mp_malloc(mp, 416);
 	mp_check(mp);
 	print_mp(mp);
 
 	p = mp_realloc(mp, p, 14);
 	mp_check(mp);
 	print_mp(mp);
+
+	int n;
+	mp_free(mp, p1);
+	p = mp_max_block(mp, &n, 1);
+	mp_check(mp);
+	print_mp(mp);
+	printf("%p %d\n", p, n);
+
+	mempool *mp1 = mp_init(p, n);
+	mp_check(mp1);
+	print_mp(mp1);
 }
 
 int list_prev_num(mp_node_t*);

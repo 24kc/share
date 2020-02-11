@@ -27,6 +27,7 @@ void* mp_realloc (mempool*, void*, int);
 void mp_free (mempool*, void*);
 
 int mp_capacity (mempool*);
+void* mp_max_block (mempool*, int*, int);
 
 void mp_check(mempool*);
 
