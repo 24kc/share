@@ -395,3 +395,61 @@ mp_realloc_nothrow(mempool *mp, void *p, int size)
 	return p1;
 }
 
+
+//////////////////// mp_print  /////////////////////
+
+static int
+list_prev_num(mp_node_t *ml)
+{
+	int n = 0;
+	while ( ml->prev ) {
+		++n;
+		ml = ml->prev;
+	}
+	return n;
+}
+
+static int
+list_next_num(mp_node_t *ml)
+{
+	int n = 0;
+	while ( ml->next ) {
+		++n;
+		ml = ml->next;
+	}
+	return n;
+}
+
+void
+mp_print(mempool *mp)
+{
+	int flag = 0;
+	printf("[capacity] = %d\n", mp_capacity(mp));
+	for (int i=mp->list_num-1; i>=0; --i) {
+		int nalloc = list_prev_num(&mp->list[i]);
+		int nfree = list_next_num(&mp->list[i]);
+		if ( ! nalloc && ! nfree )
+			continue;
+		if ( flag )
+			printf("  ");
+		flag = 1;
+		printf("{<%d>", mp->list[i].capacity);
+		if ( nfree )
+			printf("f(%d)", nfree);
+		if ( nalloc ) {
+			printf("a(%d)", nalloc);
+			mp_node_t *ml = &mp->list[i];
+			printf("[");
+			while ( ml->prev ) {
+				ml = ml->prev;
+				printf("%d", ml->size);
+				if ( ml->prev )
+					printf(",");
+			}
+			printf("]");
+		}
+		printf("}");
+	}
+	puts("");
+}
+

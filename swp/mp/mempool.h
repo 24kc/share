@@ -34,4 +34,6 @@ void mp_check (mempool*);
 void* mp_alloc_nothrow (mempool*, int);
 void* mp_realloc_nothrow (mempool*, void*, int);
 
+void mp_print(mempool*);
+
 #endif
