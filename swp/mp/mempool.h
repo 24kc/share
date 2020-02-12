@@ -1,10 +1,8 @@
 #ifndef _MEMPOOL_H_
 #define _MEMPOOL_H_
 
-#ifndef MP_MIN_BLOCK
 #define MP_MIN_BLOCK  (32)
 // 2^n >= 32
-#endif
 
 typedef struct mp_node_t{
 	int size; // Application size
@@ -21,7 +19,6 @@ typedef struct {
 } mempool;
 
 mempool* mp_init (void*, int);
-void mp_destroy (mempool*);
 
 void* mp_alloc (mempool*, int);
 void* mp_realloc (mempool*, void*, int);

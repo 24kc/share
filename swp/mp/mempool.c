@@ -12,9 +12,8 @@
 #define MP_SIZE ( sizeof(mempool) )
 #define NODE_SIZE ( sizeof(mp_node_t) )
 
-#define _MP_THROW(msg)  mp_throw(__FILE__, __LINE__, __func__, msg)
-#define MP_THROW(msg)  _MP_THROW((msg))
-#define MP_OFM  "Out of memory."
+#define _MP_THROW_OFM(size)  mp_throw_ofm(__FILE__, __LINE__, __func__, "Out of memory.", size)
+#define MP_THROW_OFM(size)  _MP_THROW_OFM((size))
 
 int shift2(int, int);
 size_t min2pow(size_t);
@@ -29,7 +28,7 @@ void ml_del_prev(mp_node_t*);
 void ml_del_next(mp_node_t*);
 
 void mp_check_list(mp_node_t*);
-void mp_throw(const char*, int, const char*, const char*);
+void mp_throw_ofm(const char*, int, const char*, const char*, int);
 
 mempool*
 mp_init(void *mem, int size)
@@ -74,13 +73,6 @@ mp_init(void *mem, int size)
 	return mp;
 }
 
-void
-mp_destroy(mempool *mp)
-{
-	free(mp);
-}
-
-
 void*
 mp_alloc(mempool *mp, int size)
 {
@@ -94,7 +86,7 @@ mp_alloc(mempool *mp, int size)
 	int n = shift2(MP_MIN_BLOCK, block_size);
 	if ( n >= mp->list_num ) {
 		if ( ! mp->nothrow )
-			MP_THROW(MP_OFM);
+			MP_THROW_OFM(size);
 		return NULL;
 	}
 
@@ -119,7 +111,7 @@ mp_alloc(mempool *mp, int size)
 	}
 	
 	if ( ! mp->nothrow )
-		MP_THROW(MP_OFM);
+		MP_THROW_OFM(size);
 	return NULL;
 }
 
@@ -177,7 +169,7 @@ mp_realloc(mempool *mp, void *p, int size)
 		new_block = mp_alloc_nothrow(mp, size - NODE_SIZE);
 		if ( ! new_block ) {
 			if ( ! mp->nothrow )
-				MP_THROW(MP_OFM);
+				MP_THROW_OFM(size - NODE_SIZE);
 			return NULL;
 		}
 	}
@@ -365,9 +357,9 @@ mp_check_list(mp_node_t *ml)
 }
 
 void
-mp_throw(const char *file, int line, const char *func, const char *msg)
+mp_throw_ofm(const char *file, int line, const char *func, const char *msg, int size)
 {
-	fprintf(stderr, "mempool: %s:%d: %s: %s\n", file, line, func, msg);
+	fprintf(stderr, "mempool: %s:%d: %s[size = %d]: %s\n", file, line, func, size, msg);
 	abort();
 }
 
