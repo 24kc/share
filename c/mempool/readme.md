@@ -24,6 +24,6 @@ if ( ! p ) {
 
 mp_free(mp, p);
 
-mp_destroy(mp); // <=> free(mp);
+free(mp);
 ```
 
