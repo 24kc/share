@@ -3,14 +3,21 @@
 
 int main()
 {
-	int a[999];
+	int a[300];
 	mempool *mp = mp_init(a, sizeof(a));
 	mp->nothrow = 0;
 
-	void *p;
-	p = mp_alloc(mp, 999);
-	printf("%p\n", p);
-	mp_realloc(mp, p, 9999);
+	mp_print(mp);
 
+	void *p;
+	p = mp_alloc(mp, 723);
+	printf("%p\n", p);
+	mp_print(mp);
+
+	p = mp_realloc(mp, p, 400);
+	printf("%p\n", p);
+	mp_print(mp);
+
+	mp_check(mp);
 }
 
