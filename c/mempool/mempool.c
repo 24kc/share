@@ -68,11 +68,12 @@ mp_init(void *mem, int size)
 		}
 		block_size >>= 1;
 	}
+/*
 	if ( size >= MP_MIN_BLOCK ) {
 		mp_node_t *node = mem_block_init(baseptr, MP_MIN_BLOCK);
 		ml_add_next(&mp->list[0], node);
 	}
-
+*/
 	mp->nothrow = 1;
 	return mp;
 }
