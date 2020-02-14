@@ -64,11 +64,16 @@ mp_init(void *mem, int size)
 			mp_node_t *node = mem_block_init(baseptr, block_size);
 			ml_add_next(&mp->list[i], node);
 			baseptr += block_size;
-			size &= ~block_size;
+			size -= block_size;
 		}
 		block_size >>= 1;
 	}
-
+/*
+	if ( size >= MP_MIN_BLOCK ) {
+		mp_node_t *node = mem_block_init(baseptr, MP_MIN_BLOCK);
+		ml_add_next(&mp->list[0], node);
+	}
+*/
 	mp->nothrow = 1;
 	return mp;
 }
@@ -323,6 +328,7 @@ mp_get_buddy(mempool *mp, mp_node_t *node)
 void
 mp_check(mempool *mp)
 {
+	assert((void*)mp + MP_SIZE == (void*)mp->list);
 	assert(mp->end >= mp->begin);
 	assert(mp->list_num > 0);
 	assert(mp->begin == (void*)(mp->list + mp->list_num));
@@ -416,7 +422,7 @@ void
 mp_print(mempool *mp)
 {
 	int flag = 0;
-	printf("[capacity] = %d\n", mp_capacity(mp));
+	printf("[ %d bytes, %d lists ]\n", mp_capacity(mp), mp->list_num);
 	for (int i=mp->list_num-1; i>=0; --i) {
 		int nalloc = list_prev_num(&mp->list[i]);
 		int nfree = list_next_num(&mp->list[i]);
