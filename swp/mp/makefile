@@ -1,4 +1,9 @@
+ifdef s
+CC = gcc -Wall -pedantic-errors
+else
 CC = gcc -Wall
+endif
+
 objs = mempool.o
 
 001: 001.c $(objs)
