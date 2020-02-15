@@ -12,8 +12,9 @@
 #define MP_SIZE ( sizeof(mempool) )
 #define NODE_SIZE ( sizeof(mp_node_t) )
 
-#define _MP_THROW_OFM(size)  mp_throw_ofm(__FILE__, __LINE__, __func__, "Out of memory.", size)
-#define MP_THROW_OFM(size)  _MP_THROW_OFM((size))
+#define MP_THROW_OFM(size)  mp_throw_ofm(__FILE__, __LINE__, __func__, "Out of memory.", (size))
+
+typedef unsigned char BYTE;
 
 int shift2(int, int);
 size_t min2pow(size_t);
@@ -37,7 +38,7 @@ mp_init(void *mem, int size)
 		return NULL;
 
 	mempool *mp = (mempool*)mem;
-	mp->list = mem + MP_SIZE;
+	mp->list = (mp_node_t*)((BYTE*)mem + MP_SIZE);
 	size -= MP_SIZE;
 
 	int max = min2pow(size) >> 1;
@@ -56,21 +57,21 @@ mp_init(void *mem, int size)
 		mp_node_init(&mp->list[i], MP_MIN_BLOCK<<i);
 
 	int block_size = max;
-	void *baseptr = mp->list + mp->list_num;
-	mp->begin = baseptr;
-	mp->end = baseptr + size;
+	void *p = mp->list + mp->list_num;
+	mp->begin = p;
+	mp->end = (BYTE*)p + size;
 	for (int i=n-1; i>=0; --i) {
 		if ( size >= block_size ) {
-			mp_node_t *node = mem_block_init(baseptr, block_size);
+			mp_node_t *node = mem_block_init(p, block_size);
 			ml_add_next(&mp->list[i], node);
-			baseptr += block_size;
+			p = (BYTE*)p + block_size;
 			size -= block_size;
 		}
 		block_size >>= 1;
 	}
 /*
 	if ( size >= MP_MIN_BLOCK ) {
-		mp_node_t *node = mem_block_init(baseptr, MP_MIN_BLOCK);
+		mp_node_t *node = mem_block_init(p, MP_MIN_BLOCK);
 		ml_add_next(&mp->list[0], node);
 	}
 */
@@ -103,7 +104,7 @@ mp_alloc(mempool *mp, int size)
 			ml_del_next(head);
 			while ( m > n ) {
 				node->capacity >>= 1;
-				mp_node_t *new_node = mem_block_init((void*)node + node->capacity, node->capacity);
+				mp_node_t *new_node = mem_block_init((BYTE*)node + node->capacity, node->capacity);
 				--head;
 				ml_add_next(head, new_node);
 				--m;
@@ -161,7 +162,7 @@ mp_realloc(mempool *mp, void *p, int size)
 		}
 		new_block = mp_alloc_nothrow(mp, size - NODE_SIZE);
 		if ( ! new_block ) {
-			mp_node_t *buddy = mem_block_init((void*)node + half_cap, half_cap);
+			mp_node_t *buddy = mem_block_init((BYTE*)node + half_cap, half_cap);
 			int n = shift2(MP_MIN_BLOCK, half_cap);
 			ml_add_next(&mp->list[n], buddy);
 			node->capacity = half_cap;
@@ -188,8 +189,8 @@ void
 mp_free(mempool *mp, void *p)
 {
 	mp_node_t *node = (mp_node_t*)p - 1;
-	assert( (void*)node >= mp->begin && ((void*)node + node->capacity) <= mp->end );
-	assert( ((void*)node - mp->begin) % node->capacity == 0 );
+	assert( (void*)node >= mp->begin && ((BYTE*)node + node->capacity) <= (BYTE*)mp->end );
+	assert( ((BYTE*)node - (BYTE*)mp->begin) % node->capacity == 0 );
 	assert( node->size >= 0 );
 
 	ml_del_prev(node->next);
@@ -211,7 +212,7 @@ mp_free(mempool *mp, void *p)
 int
 mp_capacity(mempool *mp)
 {
-	return mp->end - mp->begin;
+	return (BYTE*)mp->end - (BYTE*)mp->begin;
 }
 
 void*
@@ -315,11 +316,11 @@ mp_get_buddy(mempool *mp, mp_node_t *node)
 {
 	int capacity = node->capacity;
 	void *buddy;
-	if ( ((void*)node - mp->begin) & capacity )
-		buddy = (void*)node - capacity;
+	if ( ((BYTE*)node - (BYTE*)mp->begin) & capacity )
+		buddy = (BYTE*)node - capacity;
 	else {
-		buddy = (void*)node + capacity;
-		if ( (void*)buddy + capacity > mp->end )
+		buddy = (BYTE*)node + capacity;
+		if ( (BYTE*)buddy + capacity > (BYTE*)mp->end )
 			return NULL;
 	}
 	return buddy;
@@ -328,7 +329,7 @@ mp_get_buddy(mempool *mp, mp_node_t *node)
 void
 mp_check(mempool *mp)
 {
-	assert((void*)mp + MP_SIZE == (void*)mp->list);
+	assert((BYTE*)mp + MP_SIZE == (BYTE*)mp->list);
 	assert(mp->end >= mp->begin);
 	assert(mp->list_num > 0);
 	assert(mp->begin == (void*)(mp->list + mp->list_num));
