@@ -45,6 +45,8 @@ _my_free(void *p)
 
 #undef _mp
 
+#include <malloc.h>
+
 #define malloc(size)  _my_malloc(size)
 #define realloc(p, size)  _my_realloc(p, size)
 #define free(p)  _my_free(p)
