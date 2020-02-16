@@ -40,7 +40,7 @@ static
 void
 _my_free(void *p)
 {
-	return mp_free(_mp, p);
+	mp_free(_mp, p);
 }
 
 #undef _mp
