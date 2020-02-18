@@ -34,6 +34,8 @@ void mp_throw_ofm(const char*, int, const char*, const char*, int);
 mempool*
 mp_init(void *mem, int size)
 {
+	assert(mem);
+
 	if ( size < MP_SIZE + NODE_SIZE )
 		return NULL;
 
@@ -82,6 +84,8 @@ mp_init(void *mem, int size)
 void*
 mp_alloc(mempool *mp, int size)
 {
+	assert(mp);
+
 	if ( size < 0 )
 		return NULL;
 
@@ -124,6 +128,9 @@ mp_alloc(mempool *mp, int size)
 void*
 mp_realloc(mempool *mp, void *p, int size)
 {
+	assert(mp);
+	assert(p);
+
 	if ( size <= 0 ) {
 		mp_free(mp, p);
 		return NULL;
@@ -180,7 +187,7 @@ mp_realloc(mempool *mp, void *p, int size)
 		}
 	}
 
-	memcpy(new_block, node+1, size - NODE_SIZE);
+	memcpy(new_block, node+1, node->size);
 	mp_free(mp, node+1);
 	return new_block;
 }
@@ -188,6 +195,9 @@ mp_realloc(mempool *mp, void *p, int size)
 void
 mp_free(mempool *mp, void *p)
 {
+	assert(mp);
+	assert(p);
+
 	mp_node_t *node = (mp_node_t*)p - 1;
 	assert( (void*)node >= mp->begin && ((BYTE*)node + node->capacity) <= (BYTE*)mp->end );
 	assert( ((BYTE*)node - (BYTE*)mp->begin) % node->capacity == 0 );

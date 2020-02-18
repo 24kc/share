@@ -7,6 +7,7 @@ int main()
 	mempool *mp = mp_init(a, sizeof(a));
 	mp_print(mp);
 
+// 内存池套娃
 	int n;
 	while ( (mp = mp_max_block(mp, &n, 1)) ) {
 		mp = mp_init(mp, n);
