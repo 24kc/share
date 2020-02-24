@@ -1,7 +1,6 @@
 # mempool  
 
 ### `mempool* mp_init (void *mem, int size, int flag);`  
-### `void mp_destroy (mempool*);`  
 
 ## `void* mp_alloc (mempool*, int size);`  
 ## `void* mp_realloc (mempool*, void *mem, int size);`  
