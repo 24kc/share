@@ -5,50 +5,21 @@
 #include "mempool.h"
 #endif
 
-#ifndef MY_MPSIZE
-#define MY_MPSIZE  ( 24-'k' +999999 )
+#include <stdlib.h>
+
+#ifndef _MY_MALLOC_C_
+extern mempool *_mp;
+#else
+mempool *_mp = NULL;
 #endif
 
-#ifndef MY_MP_THROW
-#define MY_MP_THROW  (0)
-#endif
-
-#define _mp __my_malloc_mp__
-
-static mempool *_mp = NULL;
-
-static
-void*
-_my_malloc(size_t size)
-{
-	if ( ! _mp ) {
-		static char mem[MY_MPSIZE];
-		_mp = mp_init(mem, sizeof(mem)); 
-		_mp->nothrow = ! MY_MP_THROW;
-	}
-	return mp_alloc(_mp, size);
-}
-
-static
-void*
-_my_realloc(void *p, size_t size)
-{
-	return mp_realloc(_mp, p, size);
-}
-
-static
-void
-_my_free(void *p)
-{
-	mp_free(_mp, p);
-}
-
-#undef _mp
-
-#include <malloc.h>
+void* _my_malloc(size_t size);
+void* _my_realloc(void *mem, size_t size);
+void _my_free(void *mem);
 
 #define malloc(size)  _my_malloc(size)
-#define realloc(p, size)  _my_realloc(p, size)
-#define free(p)  _my_free(p)
+#define realloc(mem, size)  _my_realloc(mem, size)
+#define free(mem)  _my_free(mem)
 
 #endif
+

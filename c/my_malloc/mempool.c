@@ -32,11 +32,11 @@ void mp_check_list(mp_node_t*);
 void mp_throw_ofm(const char*, int, const char*, const char*, int);
 
 mempool*
-mp_init(void *mem, int size)
+mp_init(void *mem, int size, int flag)
 {
 	assert(mem);
 
-	if ( size < MP_SIZE + NODE_SIZE )
+	if ( size < (int)(MP_SIZE+NODE_SIZE) )
 		return NULL;
 
 	mempool *mp = (mempool*)mem;
@@ -46,7 +46,7 @@ mp_init(void *mem, int size)
 	int max = min2pow(size) >> 1;
 	int n = shift2(MP_MIN_BLOCK, max) + 1;
 
-	if ( size < max + NODE_SIZE * n ) {
+	if ( size < (int)(max + NODE_SIZE*n) ) {
 		--n;
 		max >>= 1;
 	}
@@ -77,7 +77,7 @@ mp_init(void *mem, int size)
 		ml_add_next(&mp->list[0], node);
 	}
 */
-	mp->nothrow = 1;
+	mp->flag = flag;
 	return mp;
 }
 
@@ -95,7 +95,7 @@ mp_alloc(mempool *mp, int size)
 
 	int n = shift2(MP_MIN_BLOCK, block_size);
 	if ( n >= mp->list_num ) {
-		if ( ! mp->nothrow )
+		if ( mp->flag & MP_THROW )
 			MP_THROW_OFM(size);
 		return NULL;
 	}
@@ -120,7 +120,7 @@ mp_alloc(mempool *mp, int size)
 		++m;
 	}
 	
-	if ( ! mp->nothrow )
+	if ( mp->flag & MP_THROW )
 		MP_THROW_OFM(size);
 	return NULL;
 }
@@ -181,7 +181,7 @@ mp_realloc(mempool *mp, void *p, int size)
 	} else {
 		new_block = mp_alloc_nothrow(mp, size - NODE_SIZE);
 		if ( ! new_block ) {
-			if ( ! mp->nothrow )
+			if ( mp->flag & MP_THROW )
 				MP_THROW_OFM(size - NODE_SIZE);
 			return NULL;
 		}
@@ -205,7 +205,7 @@ mp_free(mempool *mp, void *p)
 
 	ml_del_prev(node->next);
 	mp_node_t *buddy = mp_get_buddy(mp, node);
-	while ( buddy && buddy->size < 0 ) {
+	while ( buddy && buddy->size < 0 && buddy->capacity == node->capacity ) {
 		ml_del_next(buddy->prev);
 		mp_node_t *merge = node < buddy ? node : buddy;
 		merge->size = -1;
@@ -333,7 +333,7 @@ mp_get_buddy(mempool *mp, mp_node_t *node)
 		if ( (BYTE*)buddy + capacity > (BYTE*)mp->end )
 			return NULL;
 	}
-	return buddy;
+	return (mp_node_t*)buddy;
 }
 
 void
@@ -368,7 +368,7 @@ mp_check_list(mp_node_t *ml)
 		p1 = p->prev;
 		assert(p1->next == p);
 		assert(p1->capacity == ml->capacity);
-		assert(0 <= p1->size && p1->size <= ml->capacity - NODE_SIZE);
+		assert(0 <= p1->size && p1->size <= (int)(ml->capacity-NODE_SIZE));
 		p = p1;
 	}
 }
@@ -383,24 +383,24 @@ mp_throw_ofm(const char *file, int line, const char *func, const char *msg, int 
 void*
 mp_alloc_nothrow(mempool *mp, int size)
 {
-	int flag = mp->nothrow;
-	if ( flag )
+	int flag = mp->flag;
+	if ( ! (flag & MP_THROW) )
 		return mp_alloc(mp, size);
-	mp->nothrow = 1;
+	mp->flag &= ~MP_THROW;
 	void *p = mp_alloc(mp, size);
-	mp->nothrow = flag;
+	mp->flag = flag;
 	return p;
 }
 
 void*
 mp_realloc_nothrow(mempool *mp, void *p, int size)
 {
-	int flag = mp->nothrow;
-	if ( flag )
+	int flag = mp->flag;
+	if ( ! (flag & MP_THROW) )
 		return mp_realloc(mp, p, size);
-	mp->nothrow = 1;
+	mp->flag &= ~MP_THROW;
 	void *p1 = mp_realloc(mp, p, size);
-	mp->nothrow = flag;
+	mp->flag = flag;
 	return p1;
 }
 
@@ -459,6 +459,6 @@ mp_print(mempool *mp)
 		}
 		printf("}");
 	}
-	puts("");
+	puts("\n");
 }
 
