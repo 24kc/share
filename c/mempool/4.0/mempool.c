@@ -20,7 +20,6 @@ int shift2(int, int);
 size_t min2pow(size_t);
 mp_node_t* mem_block_init(void*, int);
 mp_node_t* mp_get_buddy(mempool*, mp_node_t*);
-void mem_block_halved(mempool*, mp_node_t*);
 
 void mp_node_init(mp_node_t*, int);
 
@@ -340,18 +339,6 @@ mp_get_buddy(mempool *mp, mp_node_t *node)
 	if ( buddy->capacity != node->capacity )
 		return NULL;
 	return buddy;
-}
-
-void
-mem_block_halved(mempool *mp, mp_node_t *node)
-{
-	int half_cap = node->capacity >> 1;
-	mp_node_t *buddy = mem_block_init((BYTE*)node + half_cap, half_cap);
-	int n = shift2(MP_MIN_BLOCK, half_cap);
-	ml_add_next(&mp->list[n], buddy);
-	node->capacity = half_cap;
-	ml_del_prev(node->next);
-	ml_add_prev(&mp->list[n], node);
 }
 
 void
