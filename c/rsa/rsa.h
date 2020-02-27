@@ -38,7 +38,7 @@ BYTE* rsa_decrypt_all(void*, int, int*, RSA_Key *key);
 QWORD krand();
 QWORD lcm(QWORD, QWORD);
 QWORD gcd(QWORD, QWORD);
-QWORD inter_prime_small();
+QWORD inter_prime_small(QWORD);
 QWORD mul_inv_mod(QWORD a, QWORD p);
 int is_prime_fool(QWORD);
 int is_prime_32b(DWORD);

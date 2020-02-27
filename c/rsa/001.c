@@ -218,6 +218,7 @@ help(const char *cmd)
 " -e                Encrypt\n"
 " -d                Decrypt\n"
 " -in in_file       Input file\n"
+" -out out_file     Output file\n"
 " -k/-key key       Specifying the key file\n"
 " -keygen file      Generate key file\n"
 " -h/-help          Display this message\n"
