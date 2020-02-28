@@ -21,13 +21,13 @@ operator new[] (size_t size)
 }
 
 void
-operator delete (void *mem)
+operator delete (void *mem) noexcept
 {
 	_mp->free(mem);
 }
 
 void
-operator delete[] (void *mem)
+operator delete[] (void *mem) noexcept
 {
 	operator delete (mem);
 }
