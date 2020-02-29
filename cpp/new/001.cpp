@@ -1,16 +1,17 @@
 #include <iostream>
+#include <set>
 #include "my_new.h"
-#include <list>
-#include <string>
 using namespace std;
 using namespace akm;
 
 int main()
 {
-	list<string> ls;
+	cout<<_mp;
 
-	for (int i=0; i<24; ++i)
-		ls.push_back(string("24k mempool ------------------------------------------------------------------"));
+	auto s = new set<int>();
+
+	for (int i=0; i<100; ++i)
+		s->insert(i);
 
 	cout<<_mp;
 }
