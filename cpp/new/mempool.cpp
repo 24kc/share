@@ -3,12 +3,15 @@
 #include <cstring>
 #include <cassert>
 
+#ifdef _MSC_VER
+#define __func__ __FUNCTION__
+#else
 #define __func__ __PRETTY_FUNCTION__
+#endif
 
 #define MP_SIZE  ( sizeof(mempool) )
 #define NODE_SIZE  ( sizeof(mempool::node_t) )
 #define MP_THROW_OFM(size)  mp_throw_ofm(__FILE__, __LINE__, __func__, "Out of memory.", (size))
-
 
 
 namespace akm {
