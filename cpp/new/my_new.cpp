@@ -1,6 +1,8 @@
 #define _MY_NEW_C_
 #include "my_new.h"
 
+#include <mutex>
+
 #define MY_MPSIZE  ( 24-'k' +999999 )
 
 namespace {
@@ -13,11 +15,14 @@ class my_new_init {
 	}
 } my_new_init;
 
+std::mutex mp_mutex;
+
 } // namespace
 
 void*
 operator new (size_t size)
 {
+	std::lock_guard<std::mutex> guard(mp_mutex);
 	return _mp->alloc(size);
 }
 
@@ -30,12 +35,13 @@ operator new[] (size_t size)
 void
 operator delete (void *mem) noexcept
 {
+	std::lock_guard<std::mutex> guard(mp_mutex);
 	_mp->free(mem);
 }
 
 void
 operator delete[] (void *mem) noexcept
 {
-	operator delete (mem);
+	operator delete(mem);
 }
 
