@@ -15,7 +15,7 @@
 
 
 namespace akm {
-using namespace std;
+using std::ostream;
 using BYTE = unsigned char;
 
 static int shift2(int, int);

@@ -8,7 +8,7 @@
 #define MP_THROW  (0x10)
 
 namespace akm {
-using namespace std;
+using std::ostream;
 
 class mempool {
   public:
