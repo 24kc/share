@@ -348,6 +348,7 @@ mp_get_buddy(mempool *mp, mp_node_t *node)
 void
 mp_check(mempool *mp)
 {
+	assert(mp);
 	assert((BYTE*)mp + MP_SIZE == (BYTE*)mp->list);
 	assert(mp->end >= mp->begin);
 	assert(mp->list_num > 0);
@@ -441,6 +442,8 @@ list_next_num(mp_node_t *ml)
 void
 mp_print(mempool *mp)
 {
+	assert(mp);
+
 	int flag = 0;
 	printf("[ %d bytes, %d lists ]\n", mp_capacity(mp), mp->list_num);
 	for (int i=mp->list_num-1; i>=0; --i) {

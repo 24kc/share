@@ -1,61 +1,26 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include "mempool.h"
-
-#define N  (2000)
-#define M  ( ( (rand()%11) << (rand()%11) ) + 1 )
+#include "my_malloc.h"
 
 int main()
 {
-	srand(time(NULL));
+	int i, n;
+	char *buffer;
 
-	static char mem[999999*3];
-	mempool *mp = mp_init(mem, sizeof(mem), MP_THROW);
-	mp_print(mp);
-	mp_check(mp);
+	printf("How long do you want the string? ");
+	scanf("%d", &i);
 
-	int *a[N];
+	buffer = (char*)malloc(i+1);
+	mp_print(_mp);
 
-	for (int i=0; i<N; ++i) {
-		a[i] = (int*)mp_alloc(mp, rand()%M);
-	}
+	for (n=0; n<i; n++)
+		buffer[n] = rand() % 26 + 'a';
+	buffer[i] = '\0';
 
-	mp_print(mp);
-	mp_check(mp);
+	printf("Random string: %s\n", buffer);
+	free(buffer);
 
-	for (int i=0; i<N/2; ++i) {
-		int index = rand()%N;
-		if ( ! a[index] )
-			continue;
-		mp_free(mp, a[index]);
-		a[index] = NULL;
-		mp_check(mp);
-	}
+	mp_print(_mp);
 
-	mp_print(mp);
-	mp_check(mp);
-
-	for (int i=0; i<N; ++i) {
-		if ( ! a[i] )
-			continue;
-		int new_size = rand()%(M<<1);
-	//	printf("%d => %d\n", ((mp_node_t*)a[i]-1)->size, new_size);
-		a[i] = (int*)mp_realloc(mp, a[i], new_size);
-		mp_check(mp);
-	}
-
-	mp_print(mp);
-	mp_check(mp);
-
-	for (int i=0; i<N; ++i) {
-		if ( ! a[i] )
-			continue;
-		mp_free(mp, a[i]);
-		mp_check(mp);
-	}
-
-	mp_print(mp);
-	mp_check(mp);
-}
+	return 0;
+}	
 
