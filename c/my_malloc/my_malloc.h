@@ -13,9 +13,17 @@ extern mempool *_mp;
 mempool *_mp = NULL;
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void* _my_malloc(size_t size);
 void* _my_realloc(void *mem, size_t size);
 void _my_free(void *mem);
+
+#ifdef __cplusplus
+}
+#endif
 
 #define malloc(size)  _my_malloc(size)
 #define realloc(mem, size)  _my_realloc(mem, size)

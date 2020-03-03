@@ -3,6 +3,10 @@
 
 #define MY_MPSIZE  ( 24-'k' +999999 )
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void*
 _my_malloc(size_t size)
 {
@@ -24,4 +28,8 @@ _my_free(void *mem)
 {
 	mp_free(_mp, mem);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
