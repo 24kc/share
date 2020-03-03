@@ -54,6 +54,8 @@ mp_init(void *mem, int size, int flag)
 		--n;
 		max >>= 1;
 	}
+	if ( max < MP_MIN_BLOCK )
+		max = MP_MIN_BLOCK;
 	if ( n < 1 )
 		n = 1;
 
