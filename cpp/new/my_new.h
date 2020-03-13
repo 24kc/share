@@ -3,11 +3,13 @@
 
 #include "mempool.h"
 
-#ifndef _MY_NEW_C_
-extern akm::mempool *_mp;
+namespace akm {
+#ifndef _MY_NEW_CPP_
+extern mempool *mp;
 #else
-akm::mempool *_mp = NULL;
+mempool *mp = NULL;
 #endif
+} // namespace akm
 
 void* operator new (size_t);
 void* operator new[] (size_t);

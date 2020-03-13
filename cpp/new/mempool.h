@@ -1,51 +1,48 @@
 #ifndef _MEMPOOL_H_
 #define _MEMPOOL_H_
 
-#include <iostream>
+#include <stdint.h>
+#include <stddef.h>
 
-#define MP_MIN_BLOCK  (32)
+#define MP_THROW  (0x8) // 内存不足时抛出异常(使用abort())
 
-#define MP_THROW  (0x10)
+// mempool 不使用额外内存, 内部采用偏移, 支持fwrite/fread复现
+typedef struct {
+	int flags;
+	int nlists; // list num
+	uint64_t capacity;
+	uint64_t nalloc; // alloc size
+	uint64_t nfree; // free size, nfree <= capacity
+} mempool;
 
-namespace akm {
-using std::ostream;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-class mempool {
-  public:
-	static mempool*
-	create(void *mem, int size, int flag);
+/* std: */
+mempool* mp_init (void *mem, size_t size, int flags);
+// 在大小为size的内存块mem上建立内存池
+	// flags:
+		// MP_THROW 指定在内存不足时抛出异常(使用abort())
+	// 成功: 返回的地址与mem相同
+	// 失败: 返回NULL (size过小时会失败)
+void* mp_alloc (mempool *mp, size_t size);
+void* mp_realloc (mempool *mp, void *mem, size_t size);
+void mp_free (mempool *mp, void *mem);
+// 类似 malloc, realloc, free
 
-	mempool() = delete;
-	mempool(const mempool&) = delete;
-	mempool& operator= (const mempool&) = delete;
-	~mempool() = delete;
+/* for 套娃: */
+size_t mp_max_block_size (mempool *mp);
+// 返回最大可用内存块的大小, 内存已用完则为0
 
-	void* alloc(int size);
-	void* realloc(void *mem, int size);
-	void free(void *mem);
+/* for debug: */
+void mp_check (mempool*);
+// 初步检查内存池数据是否有误, 出错直接抛出异常
+void mp_print (mempool*);
+// 输出内存池中内存分布信息
 
-	int capacity() const;
-	int max_block_size() const;
+#ifdef __cplusplus
+}
+#endif
 
-	void check() const;
-	friend ostream& operator<< (ostream &out, const mempool *mp);
-	friend ostream& operator<< (ostream &out, const mempool &mp);
-
-  private:
-	class node_t;
-
-	node_t *list;
-	int list_num;
-	int flag;
-	void *begin, *end;
-
-	void* alloc_nothrow(int size) noexcept;
-
-	static node_t* mb_init(void*, int);
-	static node_t* mb_get_buddy(const mempool*, node_t*);
-	static void check_list(node_t*);
-};
-
-} // namespace akm
-
-#endif // _MEMPOOL_H_
+#endif

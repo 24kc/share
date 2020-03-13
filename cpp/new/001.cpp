@@ -1,35 +1,22 @@
 #include <iostream>
-#include <set>
-#include <thread>
-#include "my_new.h"
+#include <list>
+#include <cstring>
+#include "my_new.h" // 重载new
 using namespace std;
-using namespace akm;
-
-void f();
+using akm::mp; // 全局内存池指针
 
 int main()
 {
-	const int N = 10;
+	char a[1200];
+	mp = mp_init(a, sizeof(a), MP_THROW);
+	// 使用这个内存池作为new的源泉
 
-	thread t[N];
-	cout<<_mp;
+	mp_print(mp);
 
-	for (int i=0; i<N; ++i)
-		t[i] = thread(f);
+	list<int> *L = new list<int>();
+	for (int i=0; i<24; ++i)
+		L->push_back(i);
 
-	cout<<_mp;
-
-	for (int i=0; i<N; ++i)
-		t[i].join();
-
-	cout<<_mp;
-	_mp->check();
+	mp_print(mp);
 }
 
-void
-f()
-{
-	auto s = new set<int>();
-	for (int i=0; i<100; ++i)
-		s->insert(i);
-}

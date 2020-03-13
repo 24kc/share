@@ -1,4 +1,4 @@
-#define _MY_NEW_C_
+#define _MY_NEW_CPP_
 #include "my_new.h"
 
 #include <mutex>
@@ -11,19 +11,19 @@ class my_new_init {
   public:
 	my_new_init() {
 		static char mem[MY_MPSIZE];
-		::_mp = akm::mempool::create(mem, sizeof(mem), MP_THROW);
+		akm::mp = mp_init(mem, sizeof(mem), MP_THROW);
 	}
 } my_new_init;
 
 std::mutex mp_mutex;
 
-} // namespace
+} // namespace <anonymous>
 
 void*
 operator new (size_t size)
 {
 	std::lock_guard<std::mutex> guard(mp_mutex);
-	return _mp->alloc(size);
+	return mp_alloc(akm::mp, size);
 }
 
 void*
@@ -36,7 +36,7 @@ void
 operator delete (void *mem) noexcept
 {
 	std::lock_guard<std::mutex> guard(mp_mutex);
-	_mp->free(mem);
+	mp_free(akm::mp, mem);
 }
 
 void
