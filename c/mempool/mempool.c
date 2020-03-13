@@ -45,22 +45,21 @@ typedef struct {
 extern "C" {
 #endif
 
-void* mp_alloc_nothrow(mempool*, uint64_t);
+static void* mp_alloc_nothrow(mempool*, uint64_t);
 
-uint64_t mp_capacity(mempool*); // 内存池总容量
-mp_node_t* mp_block_split(mp_node_t*); // 把内存块一分为二
-mp_node_t* mp_get_buddy(mempool*, mp_node_t*); // 返回已分配内存块的伙伴或NULL
+static mp_node_t* mp_block_split(mp_node_t*); // 把内存块一分为二
+static mp_node_t* mp_get_buddy(mempool*, mp_node_t*); // 返回已分配内存块的伙伴或NULL
 
-int mp_lists_index(uint64_t); // MP_MIN_BLOCK -> 0
-void mp_node_init(mp_node_t*, int); // 初始化记录结点
-void mp_list_add(mempool*, mp_node_t*, mp_node_t*);
-void mp_list_del(mempool*, mp_node_t*);
+static int mp_lists_index(uint64_t); // MP_MIN_BLOCK -> 0
+static void mp_node_init(mp_node_t*, int); // 初始化记录结点
+static void mp_list_add(mempool*, mp_node_t*, mp_node_t*);
+static void mp_list_del(mempool*, mp_node_t*);
 
-void mp_check_list(mempool*, mp_node_t*);
-void mp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
+static void mp_check_list(mempool*, mp_node_t*);
+static void mp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
 
-uint64_t min2pow(uint64_t n); // 不小于n的最小2的整数幂
-int int64_highest_bit(uint64_t i); // 最高位1是第几位 (0~63)
+static uint64_t min2pow(uint64_t n); // 不小于n的最小2的整数幂
+static int int64_highest_bit(uint64_t i); // 最高位1是第几位 (0~63)
 
 
 // **  mp_ init alloc/realloc/free  **
