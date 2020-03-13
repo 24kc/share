@@ -37,7 +37,7 @@ typedef struct {
 
 #define MP_SIZE  ( sizeof(mempool) )
 #define NODE_SIZE  ( sizeof(mp_node_t) )
-#define RECORD_SIZE  ( sizeof(uint64_t) )
+#define RECORD_SIZE  ( sizeof(mp_record_t) )
 
 #define MP_THROW_OFM(size)  mp_throw_ofm(__FILE__, __LINE__, __func__, "Out of memory.", (size))
 
