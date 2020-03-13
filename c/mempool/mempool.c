@@ -267,13 +267,7 @@ mp_alloc_nothrow(mempool *mp, uint64_t size)
 	return mem;
 }
 
-// **  mp_ capacity max_block_size get_buddy  **
-
-uint64_t
-mp_capacity(mempool *mp)
-{
-	return mp->capacity;
-}
+// **  mp_ max_block_size get_buddy  **
 
 uint64_t
 mp_max_block_size(mempool *mp)
