@@ -1,7 +1,6 @@
 CC = gcc -Wall -pedantic
-
-exes = 001
 objs = mempool.o
+exes = 001
 
 001: 001.c $(objs)
 	$(CC) 001.c $(objs) -o 001
