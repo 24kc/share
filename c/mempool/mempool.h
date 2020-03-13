@@ -8,8 +8,8 @@
 
 // mempool 不使用额外内存, 内部采用偏移, 支持fwrite/fread复现
 typedef struct {
-	int flags;
-	int nlists; // list num
+	int32_t flags;
+	int32_t nlists; // list num
 	uint64_t capacity;
 	uint64_t nalloc; // alloc size
 	uint64_t nfree; // free size, nfree <= capacity
