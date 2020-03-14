@@ -9,7 +9,7 @@
 #define __func__ __FUNCTION__
 #endif
 
-#define MP_MIN_BLOCK  (16)
+#define MP_MIN_BLOCK  (16L)
 // 2^n >= 16
 
 typedef unsigned char BYTE;
@@ -31,7 +31,7 @@ typedef struct {
 	uint64_t next;
 } mp_node_t;
 
-#define OFF_NULL  (0)
+#define OFF_NULL  (0L)
 #define OFF(ptr)  ( (BYTE*)ptr - (BYTE*)mp )
 #define PTR(off)  ( (mp_node_t*) ((BYTE*)mp + off) )
 
