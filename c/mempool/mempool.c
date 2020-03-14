@@ -17,9 +17,9 @@ typedef unsigned char BYTE;
 // 记录内存分配信息
 typedef struct mp_record_t {
 	uint64_t size:48; // 提供的内存大小
-	unsigned index:8; // lists[index], (index:6)
-	unsigned :7;
-	unsigned is_used:1; // 是否已分配
+	uint64_t index:8; // lists[index], (index:6)
+	uint64_t :7;
+	uint64_t is_used:1; // 是否已分配
 } mp_record_t;
 
 // mempool record node, use offset
