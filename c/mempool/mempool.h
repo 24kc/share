@@ -32,7 +32,7 @@ void mp_free (mempool *mp, void *mem);
 // 类似 malloc, realloc, free
 
 /* for 套娃: */
-size_t mp_max_block_size (mempool *mp);
+uint64_t mp_max_block_size (mempool *mp);
 // 返回最大可用内存块的大小, 内存已用完则为0
 
 /* for debug: */

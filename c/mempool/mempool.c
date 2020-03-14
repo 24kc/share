@@ -367,7 +367,7 @@ mp_check(mempool *mp)
 	BYTE *end = (BYTE*)node + mp->capacity;
 	while ( (BYTE*)node < end ) {
 		uint64_t cap = MP_MIN_BLOCK << node->record.index;
-		assert( node->record.index < mp->nlists );
+		assert( node->record.index < (unsigned)mp->nlists );
 		if ( node->record.is_used )
 			assert(node->record.size + RECORD_SIZE <= cap);
 		node = (mp_node_t*)((BYTE*)node + cap);
@@ -380,7 +380,7 @@ mp_check_list(mempool *mp, mp_node_t *list)
 	mp_node_t *p, *p1;
 
 	p = list;
-	assert(p->record.index < mp->nlists);
+	assert(p->record.index < (unsigned)mp->nlists);
 	while ( p->next ) {
 		p1 = PTR(p->next);
 		assert(PTR(p1->prev) == p);
