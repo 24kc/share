@@ -9,7 +9,7 @@
 #define __func__ __FUNCTION__
 #endif
 
-#define MP_MIN_BLOCK  (16L)
+static const uint64_t MP_MIN_BLOCK = 16;
 // 2^n >= 16
 
 typedef unsigned char BYTE;
