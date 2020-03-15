@@ -270,14 +270,14 @@ mp_alloc_nothrow(mempool *mp, uint64_t size)
 
 // **  mp_ max_block_size get_buddy  **
 
-uint64_t
+size_t
 mp_max_block_size(mempool *mp)
 {
 	mp_node_t *lists = (mp_node_t*)&mp[1];
 	for (int index=mp->nlists-1; index>=0; --index) {
 		mp_node_t *head = &lists[index];
 		if ( head->next )
-			return (MP_MIN_BLOCK << index) - RECORD_SIZE;
+			return (size_t)((MP_MIN_BLOCK << index) - RECORD_SIZE);
 	}
 	return 0;
 }
