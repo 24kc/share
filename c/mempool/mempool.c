@@ -141,7 +141,7 @@ mp_alloc(mempool *mp, size_t size)
 		mp_node_t *head = &lists[i];
 		if ( head->next ) {
 			mp_node_t *node = PTR(head->next);
-			mp_list_del(mp, head);
+			mp_list_del(mp, PTR(head->next));
 			while ( i > index ) {
 				mp_node_t *new_node = mp_block_split(node);
 				mp_list_add(mp, --head, new_node);
@@ -192,7 +192,7 @@ mp_realloc(mempool *mp, void *mem, size_t size)
 			mp->nalloc += size;
 			mp->nalloc -= node->record.size;
 			mp->nfree -= capacity;
-			mp_list_del(mp, PTR(buddy->prev));
+			mp_list_del(mp, buddy);
 			++node->record.index;
 			node->record.size = size;
 			return &node->next;
@@ -244,7 +244,7 @@ mp_free(mempool *mp, void *mem)
 
 	mp_node_t *buddy = mp_get_buddy(mp, node);
 	while ( buddy ) {
-		mp_list_del(mp, PTR(buddy->prev));
+		mp_list_del(mp, buddy);
 		if ( node > buddy )
 			node = buddy;
 		++node->record.index;
@@ -343,9 +343,10 @@ mp_list_add(mempool *mp, mp_node_t *node, mp_node_t *new_node)
 void
 mp_list_del(mempool *mp, mp_node_t *node)
 {
-	node->next = PTR(node->next)->next;
+	mp_node_t *prev_node = PTR(node->prev);
+	prev_node->next = node->next;
 	if ( node->next )
-		PTR(node->next)->prev = OFF(node);
+		PTR(node->next)->prev = node->prev;
 }
 
 // ** mp_ check, check_list, throw_ofm, print **
