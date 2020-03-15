@@ -59,7 +59,8 @@ static void mp_check_list(mempool*, mp_node_t*);
 static void mp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
 
 static uint64_t min2pow(uint64_t n); // 不小于n的最小2的整数幂
-static int int64_highest_bit(uint64_t i); // 最高位1是第几位 (0~63)
+static int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
+static void fprint_uint64(uint64_t, FILE*); // 输出uint64_t
 
 
 // **  mp_ init alloc/realloc/free  **
@@ -393,7 +394,12 @@ mp_check_list(mempool *mp, mp_node_t *list)
 void
 mp_throw_ofm(const char *file, uint64_t line, const char *func, const char *msg, uint64_t size)
 {
-	fprintf(stderr, "mempool: %s:%lu: %s[size = %lu]: %s\n", file, line, func, size, msg);
+	FILE *fp = stderr;
+	fprintf(fp, "mempool: %s:", file);
+	fprint_uint64(line, fp);
+	fprintf(fp, ": %s[size = ", func);
+	fprint_uint64(size, fp);
+	fprintf(fp, "]: %s\n", msg);
 	abort();
 }
 
@@ -401,8 +407,16 @@ void
 mp_print(mempool *mp)
 {
 	assert(mp);
+	FILE *fp = stdout;
 
-	printf("[ %d lists, %lu total, %lu free, %lu used ]\n", mp->nlists, mp->capacity, mp->nfree, mp->nalloc);
+	printf("[ %d lists, ", mp->nlists);
+	fprint_uint64(mp->capacity, fp);
+	printf(" total, ");
+	fprint_uint64(mp->nfree, fp);
+	printf(" free, ");
+	fprint_uint64(mp->nalloc, fp);
+	printf(" used ]\n");
+
 	if ( ! mp->capacity ) {
 		printf("||\n\n");
 		return;
@@ -414,17 +428,39 @@ mp_print(mempool *mp)
 	printf("|");
 	while ( (BYTE*)node < end ) {
 		uint64_t cap = MP_MIN_BLOCK << node->record.index;
-		if ( ! node->record.is_used )
-			printf("%lu|", cap);
-		else
-#if 1
-			printf("-%lu|", (uint64_t)node->record.size);
+		if ( ! node->record.is_used ) {
+			fprint_uint64(cap, fp);
+			printf("|");
+		} else {
+#if 0
+			printf("-");
+			fprint_uint64(node->record.size, fp);
+			printf("|");
 #else
-			printf("<%lu/%lu>|", node->size, cap);
+		//	printf("<");
+			fprint_uint64(node->record.size, fp);
+			printf("/");
+			fprint_uint64(cap, fp);
+		//	printf(">");
+			printf("|");
 #endif
+		}
 		node = (mp_node_t*)((BYTE*)node + cap);
 	}
 	puts("\n");
+}
+
+void
+fprint_uint64(uint64_t i, FILE *fp)
+{
+	char stack[24];
+	int sp = 0;
+	do {
+		stack[sp++] = '0' + (i % 10);
+		i /= 10;
+	} while ( i );
+	while ( --sp >= 0 )
+		fputc(stack[sp], fp);
 }
 
 // ** min2pow, int64_highest_bit **
