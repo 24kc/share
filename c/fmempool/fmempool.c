@@ -122,7 +122,7 @@ fmp_alloc(fmempool *fmp, uint64_t size)
 	// block_size = 2^n  >= size + RECORD_SIZE
 	uint64_t block_size = min2pow(size + RECORD_SIZE);
 
-	// alloc(0)返回有效指针
+	// alloc(0)返回有效偏移
 	if ( ! size )
 		block_size = FMP_MIN_BLOCK;
 
@@ -324,19 +324,21 @@ fmp_head_write(fmempool *fmp)
 int
 fmp_expand(fmempool *fmp, uint64_t size)
 {
-	uint64_t n = size / FMP_BUFSIZ;
-	uint64_t r = size % FMP_BUFSIZ;
-
 	fmp_head_t *head = &fmp->head;
-	fseek(fmp->fp, head->end, SEEK_SET);
 
-	for (uint64_t i=0; i<n; ++i)
-		if ( fwrite(fmp->buf, FMP_BUFSIZ, 1, fmp->fp) != 1 )
-			return 0;
-	if ( r ) {
-		if ( fwrite(fmp->buf, r, 1, fmp->fp) != 1 )
-			return 0;
+	if ( fseek(fmp->fp, head->end + size, SEEK_SET) != 0 ) {
+		fseek(fmp->fp, head->end, SEEK_SET);
+		uint64_t n = size / FMP_BUFSIZ;
+		uint64_t r = size % FMP_BUFSIZ;
+		for (uint64_t i=0; i<n; ++i)
+			if ( fwrite(fmp->buf, FMP_BUFSIZ, 1, fmp->fp) != 1 )
+				return 0;
+		if ( r ) {
+			if ( fwrite(fmp->buf, r, 1, fmp->fp) != 1 )
+				return 0;
+		}
 	}
+
 	fmp_off_t offset = head->end;
 	head->end += size;
 
