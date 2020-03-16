@@ -243,13 +243,12 @@ mp_free(mempool *mp, void *mem)
 	mp->nalloc -= node->record.size;
 	mp->nfree += MP_MIN_BLOCK << node->record.index;
 
-	mp_node_t *buddy = mp_get_buddy(mp, node);
-	while ( buddy ) {
+	mp_node_t *buddy;
+	while ( (buddy = mp_get_buddy(mp, node)) ) {
 		mp_list_del(mp, buddy);
 		if ( node > buddy )
 			node = buddy;
 		++node->record.index;
-		buddy = mp_get_buddy(mp, node);
 	}
 
 	mp_node_t *lists = (mp_node_t*)&mp[1];
