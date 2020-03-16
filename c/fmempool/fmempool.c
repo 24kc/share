@@ -324,10 +324,16 @@ fmp_head_write(fmempool *fmp)
 int
 fmp_expand(fmempool *fmp, uint64_t size)
 {
+	// size = 2^n || size = 2^n - 2^m
 	fmp_head_t *head = &fmp->head;
 
-	if ( fseek(fmp->fp, head->end + size, SEEK_SET) != 0 ) {
-		fseek(fmp->fp, head->end, SEEK_SET);
+	assert(fseek(fmp->fp, 0, SEEK_END) == 0);
+	uint64_t file_size = ftell(fmp->fp);
+	uint64_t need_size = head->end + size;
+
+	if ( file_size < need_size ) {
+		fseek(fmp->fp, file_size, SEEK_SET);
+		uint64_t size = need_size - file_size; // local
 		uint64_t n = size / FMP_BUFSIZ;
 		uint64_t r = size % FMP_BUFSIZ;
 		for (uint64_t i=0; i<n; ++i)
@@ -339,15 +345,22 @@ fmp_expand(fmempool *fmp, uint64_t size)
 		}
 	}
 
-	fmp_off_t offset = head->end;
-	head->end += size;
+	uint64_t cap = head->end - head->begin;
+	if ( ! cap )
+		cap = size;
+	while ( head->end < need_size ) {
+		fmp_off_t offset = head->end;
+		head->end += cap;
 
-	fmp_node_t node;
-	node.record.is_used = 1;
-	node.record.index = fmp_lists_index(size);
-	node.record.size = 0;
-	assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
-	fmp_free(fmp, offset + RECORD_SIZE);
+		fmp_node_t node;
+		node.record.is_used = 1;
+		node.record.index = fmp_lists_index(cap);
+		node.record.size = 0;
+		assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
+		fmp_free(fmp, offset + RECORD_SIZE);
+
+		cap <<= 1;
+	}
 
 	return 1;
 }
@@ -355,22 +368,22 @@ fmp_expand(fmempool *fmp, uint64_t size)
 int
 fmp_reserve(fmempool *fmp, uint64_t size)
 {
+	// size = 2^n
 	uint64_t max = fmp_max_block_size(fmp) + RECORD_SIZE;
 	if ( size <= max )
 		return 1;
 
 	fmp_head_t *head = &fmp->head;
-	uint64_t capacity = head->end - head->begin;
-	if ( ! capacity )
+	uint64_t cap = head->end - head->begin;
+	if ( ! cap )
 		return fmp_expand(fmp, size);
 
-	do {
-		if ( ! fmp_expand(fmp, capacity) )
-			return 0;
-		capacity <<= 1;
-	} while ( (capacity >> 1) < size );
+	uint64_t new_cap = cap;
+	do
+		new_cap <<= 1;
+	while ( (new_cap >> 1) < size );
 
-	return 1;
+	return fmp_expand(fmp, new_cap - cap);
 }
 
 void
