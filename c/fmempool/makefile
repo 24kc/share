@@ -1,4 +1,4 @@
-CC = gcc -Wall -pedantic
+CC = clang++ -Wall -pedantic
 objs = fmempool.o
 exes = 001
 

@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <memory.h>
 #include <assert.h>
 
 #ifdef _MSC_VER
@@ -13,12 +12,6 @@ static const uint64_t FMP_MIN_BLOCK = 16;
 // 2^n >= 16
 
 #define FMP_BUFSIZ  (1024 * 4)
-
-typedef unsigned char BYTE;
-
-#define OFF_NULL  (0L)
-
-#define FMP_SIZE  ( sizeof(fmempool) )
 #define NODE_SIZE  ( sizeof(fmp_node_t) )
 #define RECORD_SIZE  ( sizeof(fmp_record_t) )
 
@@ -28,27 +21,25 @@ typedef unsigned char BYTE;
 extern "C" {
 #endif
 
-int fmp_head_read(fmempool*);
-int fmp_head_write(fmempool*);
-int fmp_expand(fmempool*, uint64_t); // 扩展内存
-int fmp_reserve(fmempool*, uint64_t); // 确保有某个大小的内存块
-void fmp_memcpy(fmempool*, fmp_off_t dest, fmp_off_t src, uint64_t size);
+static int fmp_head_read(fmempool*);
+static int fmp_head_write(fmempool*);
+static int fmp_expand(fmempool*, uint64_t); // 扩展内存
+static int fmp_reserve(fmempool*, uint64_t); // 确保有某个大小的内存块
 
-fmp_off_t fmp_alloc_nothrow(fmempool*, uint64_t);
-uint64_t fmp_max_block_size(fmempool*);
+static fmp_off_t fmp_alloc_nothrow(fmempool*, uint64_t);
+static uint64_t fmp_max_block_size(fmempool*);
 
-fmp_node_t* fmp_block_split(fmp_node_t*); // 把内存块一分为二
-fmp_off_t fmp_get_buddy(fmempool*, fmp_off_t, uint64_t); // 返回已分配内存块的伙伴或NULL
+static fmp_off_t fmp_get_buddy(fmempool*, fmp_off_t, uint64_t); // 返回已分配内存块的伙伴或NULL
 
-int fmp_lists_index(uint64_t); // FMP_MIN_BLOCK -> 0
-void fmp_list_add(fmempool*, fmp_off_t, fmp_off_t);
-void fmp_list_del(fmempool*, fmp_off_t);
+static int fmp_lists_index(uint64_t); // FMP_MIN_BLOCK -> 0
+static void fmp_list_add(fmempool*, fmp_off_t, fmp_off_t);
+static void fmp_list_del(fmempool*, fmp_off_t);
 
-void fmp_check_list(fmempool*, fmp_node_t*);
-void fmp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
+static void fmp_check_list(fmempool*, fmp_node_t*);
+static void fmp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
 
-uint64_t min2pow(uint64_t n); // 不小于n的最小2的整数幂
-int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
+static int64_t min2pow(int64_t n); // 不小于n的最小2的整数幂
+static int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
 static void fprint_uint64(uint64_t, FILE*); // 输出uint64_t
 
 // **  fmp_ init/close alloc/realloc/free  **
@@ -69,12 +60,12 @@ fmp_init(FILE *fp, uint64_t size, int flags)
 	fmp->fp = fp;
 	uint64_t block_size;
 	block_size = min2pow(size);
-	if ( block_size < FMP_MIN_BLOCK )
-		block_size = FMP_MIN_BLOCK;
 
 	fmp_head_t *head;
 	head = &fmp->head;
 	if ( flags & FMP_CREAT ) {
+		if ( block_size < FMP_MIN_BLOCK )
+			block_size = FMP_MIN_BLOCK;
 		head->flags = flags;
 		head->nlists = FMP_NLISTS;
 		const uint64_t off = sizeof(fmp_head_t) + sizeof(fmp_node_t) * head->nlists;
@@ -99,7 +90,7 @@ fmp_init(FILE *fp, uint64_t size, int flags)
 	uint64_t capacity;
 	capacity = head->end - head->begin;
 	assert(capacity);
-	if ( ! fmp_reserve(fmp, block_size) )
+	if ( block_size && ! fmp_reserve(fmp, block_size) )
 		goto _init_err;
 	return fmp;
 
@@ -150,14 +141,14 @@ fmp_alloc(fmempool *fmp, uint64_t size)
 				--node.record.index;
 				uint64_t half_cap = FMP_MIN_BLOCK << node.record.index;
 				fmp_off_t new_offset = offset + half_cap;
-				fmp_list_add(fmp, (--list)->record.index + 1, new_offset);
+				fmp_list_add(fmp, node.record.index+1, new_offset);
 				--i;
 			}
 			node.record.is_used = 1;
 			node.record.size = size;
 			head->nalloc += node.record.size;
 			head->nfree -= FMP_MIN_BLOCK << node.record.index;
-			assert(fmp_write(fmp, offset, &node, NODE_SIZE));
+			assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
 			return offset + RECORD_SIZE;
 		}
 		++i;
@@ -173,7 +164,6 @@ fmp_alloc(fmempool *fmp, uint64_t size)
 	return OFF_NULL;
 }
 
-#if 0
 fmp_off_t
 fmp_realloc(fmempool *fmp, fmp_off_t offset, uint64_t size)
 {
@@ -184,65 +174,70 @@ fmp_realloc(fmempool *fmp, fmp_off_t offset, uint64_t size)
 		fmp_free(fmp, offset);
 		return OFF_NULL;
 	}
+	offset -= RECORD_SIZE;
 
 	fmp_node_t node;
-	assert(fmp_read(fmp, offset, &node, NODE_SIZE));
+	assert(fmp_read(fmp, offset, &node, RECORD_SIZE));
 	assert(node.record.is_used);
 
+	fmp_head_t *head = &fmp->head;
+
 	uint64_t asize = size + RECORD_SIZE;
-	uint64_t capacity = FMP_MIN_BLOCK << node->record.index;
+	uint64_t capacity = FMP_MIN_BLOCK << node.record.index;
 	uint64_t half_cap = capacity >> 1;
 
 	if ( half_cap < asize && asize <= capacity ) {
-		fmp->nalloc += size;
-		fmp->nalloc -= node->record.size;
-		node->record.size = size;
-		return &node->next;
+		head->nalloc += size;
+		head->nalloc -= node.record.size;
+		node.record.size = size;
+		assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
+		return offset + RECORD_SIZE;
 	}
 
 	if ( capacity < asize && asize <= capacity<<1 ) {
-		fmp_node_t *buddy = fmp_get_buddy(fmp, node);
-		if ( buddy && buddy > node ) {
-			fmp->nalloc += size;
-			fmp->nalloc -= node->record.size;
-			fmp->nfree -= capacity;
-			fmp_list_del(fmp, PTR(buddy->prev));
-			++node->record.index;
-			node->record.size = size;
-			return &node->next;
+		fmp_off_t buddy = fmp_get_buddy(fmp, offset, node.record.index);
+		if ( buddy && buddy > offset ) {
+			head->nalloc += size;
+			head->nalloc -= node.record.size;
+			head->nfree -= capacity;
+			fmp_list_del(fmp, buddy);
+			++node.record.index;
+			node.record.size = size;
+			assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
+			return offset + RECORD_SIZE;
 		}
 	}
 
-	fmp_node_t *lists = (fmp_node_t*)&fmp[1];
 	if ( asize <= half_cap ) {
-		fmp->nalloc += size;
-		fmp->nalloc -= node->record.size;
+		head->nalloc += size;
+		head->nalloc -= node.record.size;
 		if ( half_cap < FMP_MIN_BLOCK ) {
-			node->record.size = size;
-			return &node->next;
+			node.record.size = size;
+			assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
+			return offset + RECORD_SIZE;
 		}
-		while ( node->record.index > 0 && half_cap >= asize ) {
-			fmp->nfree += half_cap;
-			fmp_node_t *buddy = fmp_block_split(node);
-			fmp_list_add(fmp, &lists[node->record.index], buddy);
+		while ( node.record.index > 0 && half_cap >= asize ) {
+			fmp_off_t new_offset = offset + half_cap;
+			fmp_list_add(fmp, node.record.index--, new_offset);
+			head->nfree += half_cap;
 			half_cap >>= 1;
 		}
-		node->record.size = size;
-		return &node->next;
+		node.record.size = size;
+		assert(fmp_write(fmp, offset, &node, RECORD_SIZE));
+		return offset + RECORD_SIZE;
 	}
 
-	void *new_offset = fmp_alloc_nothrow(fmp, size);
+	fmp_off_t new_offset = fmp_alloc_nothrow(fmp, size);
 	if ( ! new_offset ) {
-		if ( fmp->flags & FMP_THROW )
+		if ( head->flags & FMP_THROW )
 			FMP_THROW_OFM(size);
-		return NULL;
+		return OFF_NULL;
 	}
-	memcpy(new_offset, &node->next, node->record.size);
-	fmp_free(fmp, offset);
+	fmp_memcpy(fmp, new_offset, offset+RECORD_SIZE, node.record.size);
+	fmp_free(fmp, offset+RECORD_SIZE);
 
 	return new_offset;
 }
-#endif
 
 void
 fmp_free(fmempool *fmp, fmp_off_t offset)
@@ -252,7 +247,7 @@ fmp_free(fmempool *fmp, fmp_off_t offset)
 
 	offset -= RECORD_SIZE;
 	fmp_node_t node;
-	assert(fmp_read(fmp, offset, &node, NODE_SIZE));
+	assert(fmp_read(fmp, offset, &node, RECORD_SIZE));
 	assert(node.record.is_used);
 	node.record.is_used = 0;
 
@@ -260,13 +255,12 @@ fmp_free(fmempool *fmp, fmp_off_t offset)
 	head->nalloc -= node.record.size;
 	head->nfree += FMP_MIN_BLOCK << node.record.index;
 
-	fmp_off_t buddy = fmp_get_buddy(fmp, offset, node.record.index);
-	while ( buddy ) {
+	fmp_off_t buddy;
+	while ( (buddy = fmp_get_buddy(fmp, offset, node.record.index)) ) {
 		fmp_list_del(fmp, buddy);
 		if ( offset > buddy )
 			offset = buddy;
 		++node.record.index;
-		buddy = fmp_get_buddy(fmp, offset, node.record.index);
 	}
 
 	fmp_list_add(fmp, node.record.index + 1, offset);
@@ -409,18 +403,6 @@ fmp_max_block_size(fmempool *fmp)
 	return 0;
 }
 
-/*
-fmp_node_t*
-fmp_block_split(fmp_node_t *node)
-{
-	--node->record.index;
-	uint64_t half_cap = FMP_MIN_BLOCK << node->record.index;
-	fmp_node_t *new_node = (fmp_node_t*)((BYTE*)node + half_cap);
-	new_node->record.is_used = 0;
-	return new_node;
-}
-*/
-
 fmp_off_t
 fmp_get_buddy(fmempool *fmp, fmp_off_t offset, uint64_t index)
 {
@@ -437,7 +419,7 @@ fmp_get_buddy(fmempool *fmp, fmp_off_t offset, uint64_t index)
 	}
 
 	fmp_node_t buddy;
-	assert(fmp_read(fmp, buddy_offset, &buddy, NODE_SIZE));
+	assert(fmp_read(fmp, buddy_offset, &buddy, RECORD_SIZE));
 	if ( buddy.record.is_used || buddy.record.index != index )
 		return OFF_NULL;
 	return buddy_offset;
@@ -476,9 +458,10 @@ fmp_list_add(fmempool *fmp, fmp_off_t offset, fmp_off_t new_offset)
 		assert(0);
 
 	if ( new_node.next ) {
-		assert(fmp_read(fmp, new_node.next, &node, NODE_SIZE));
+		assert(fmp_read(fmp, new_node.next, &node, RECORD_SIZE));
 		node.prev = new_offset;
-		assert(fmp_write(fmp, new_node.next, &node, NODE_SIZE));
+		// prev is in record_t
+		assert(fmp_write(fmp, new_node.next, &node, RECORD_SIZE));
 	}
 
 	assert(fmp_write(fmp, new_offset, &new_node, NODE_SIZE));
@@ -501,9 +484,10 @@ fmp_list_del(fmempool *fmp, fmp_off_t offset)
 	prev_node.next = node.next;
 	if ( node.next ) {
 		fmp_node_t next_node;
-		assert(fmp_read(fmp, node.next, &next_node, NODE_SIZE));
+		assert(fmp_read(fmp, node.next, &next_node, RECORD_SIZE));
 		next_node.prev = node.prev;
-		assert(fmp_write(fmp, node.next, &next_node, NODE_SIZE));
+		// prev is in record_t
+		assert(fmp_write(fmp, node.next, &next_node, RECORD_SIZE));
 	}
 
 	if ( node.prev <= head->nlists )
@@ -634,8 +618,8 @@ fprint_uint64(uint64_t i, FILE *fp)
 
 // ** min2pow, int64_highest_bit **
 
-uint64_t
-min2pow(uint64_t n) { // 不小于n的 最小2的幂
+int64_t
+min2pow(int64_t n) { // 不小于n的 最小2的幂
 	--n;
 	n |= n>>1;
 	n |= n>>2;
