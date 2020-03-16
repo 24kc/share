@@ -58,7 +58,7 @@ static void mp_list_del(mempool*, mp_node_t*);
 static void mp_check_list(mempool*, mp_node_t*);
 static void mp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
 
-static uint64_t min2pow(uint64_t n); // 不小于n的最小2的整数幂
+static int64_t min2pow(int64_t n); // 不小于n的最小2的整数幂
 static int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
 static void fprint_uint64(uint64_t, FILE*); // 输出uint64_t
 
@@ -465,8 +465,8 @@ fprint_uint64(uint64_t i, FILE *fp)
 
 // ** min2pow, int64_highest_bit **
 
-uint64_t
-min2pow(uint64_t n) { // 不小于n的 最小2的幂
+int64_t
+min2pow(int64_t n) { // 不小于n的 最小2的幂
 	--n;
 	n |= n>>1;
 	n |= n>>2;
