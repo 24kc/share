@@ -473,7 +473,7 @@ fmp_list_add(fmempool *fmp, fmp_off_t offset, fmp_off_t new_offset)
 	fmp_head_t *head = &fmp->head;
 	fmp_node_t *lists = fmp->lists;
 	fmp_node_t node, new_node;
-	if ( offset <= head->nlists )
+	if ( offset <= (unsigned)head->nlists )
 		node = lists[offset-1];
 	else
 		assert(0);
@@ -484,7 +484,7 @@ fmp_list_add(fmempool *fmp, fmp_off_t offset, fmp_off_t new_offset)
 	new_node.next = node.next;
 	node.next = new_offset;
 
-	if ( offset <= head->nlists )
+	if ( offset <= (unsigned)head->nlists )
 		lists[offset-1] = node;
 	else
 		assert(0);
@@ -508,7 +508,7 @@ fmp_list_del(fmempool *fmp, fmp_off_t offset)
 	fmp_node_t *lists = fmp->lists;
 	fmp_node_t prev_node, node;
 	assert(fmp_read(fmp, offset, &node, NODE_SIZE));
-	if ( node.prev <= head->nlists )
+	if ( node.prev <= (unsigned)head->nlists )
 		prev_node = lists[node.prev-1];
 	else
 		assert(fmp_read(fmp, node.prev, &prev_node, NODE_SIZE));
@@ -522,7 +522,7 @@ fmp_list_del(fmempool *fmp, fmp_off_t offset)
 		assert(fmp_write(fmp, node.next, &next_node, RECORD_SIZE));
 	}
 
-	if ( node.prev <= head->nlists )
+	if ( node.prev <= (unsigned)head->nlists )
 		lists[node.prev-1] = prev_node;
 	else
 		assert(fmp_write(fmp, node.prev, &prev_node, NODE_SIZE));
