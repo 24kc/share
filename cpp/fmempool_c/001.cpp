@@ -2,6 +2,7 @@
 #include <fstream>
 #include "fmempool.h"
 using namespace std;
+using namespace akm;
 
 const char *fname = "0";
 
@@ -18,18 +19,13 @@ int main()
 		return -1;
 	}
 
-	fmempool *fmp = fmp_init(&f, 1000, FMP_CREAT | FMP_THROW);
-	fmp_print(fmp);
+	fmempool fmp(&f, 0, FMP_CREAT | FMP_THROW);
+	cout<<fmp;
 
-	fmp_off_t off = fmp_alloc(fmp, 120);
-	fmp_write(fmp, off, "24k fmempool", 12);
-	fmp_print(fmp);
+	auto off = fmp.alloc(12);
+	fmp.write(off, "24k fmempool", 12);
+	cout<<fmp;
 
-	off = fmp_realloc(fmp, off, 4000000);
-	fmp_print(fmp);
-
-	fmp_free(fmp, off);
-	fmp_print(fmp);
-
-	fmp_close(fmp);
+	fmp.free(off);
+	cout<<fmp;
 }

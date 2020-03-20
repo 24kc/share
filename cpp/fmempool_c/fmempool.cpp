@@ -2,10 +2,17 @@
 
 #include <stdlib.h>
 #include <assert.h>
+#include <iostream>
 
 #ifdef _MSC_VER
 #define __func__ __FUNCTION__
+#else
+#define __func__ __PRETTY_FUNCTION__
 #endif
+
+namespace akm {
+
+namespace c {
 
 static const uint64_t FMP_MIN_BLOCK = 16;
 // 2^n >= 16
@@ -16,12 +23,32 @@ static const uint64_t FMP_MIN_BLOCK = 16;
 
 #define FMP_THROW_OFM(size)  fmp_throw_ofm(__FILE__, __LINE__, __func__, "Out of memory.", (size))
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#if 1
+
+int fmp_head_read(fmempool*);
+int fmp_head_write(const fmempool*);
+int fmp_expand(fmempool*, uint64_t); // 扩展内存
+int fmp_reserve(fmempool*, uint64_t); // 确保有某个大小的内存块
+
+fmp_off_t fmp_alloc_nothrow(fmempool*, uint64_t);
+uint64_t fmp_max_block_size(fmempool*);
+
+fmp_off_t fmp_get_buddy(fmempool*, fmp_off_t, uint64_t); // 返回已分配内存块的伙伴或NULL
+
+int fmp_lists_index(uint64_t); // FMP_MIN_BLOCK -> 0
+void fmp_list_add(fmempool*, fmp_off_t, fmp_off_t);
+void fmp_list_del(fmempool*, fmp_off_t);
+
+void fmp_check_list(const fmempool*, const fmp_node_t*);
+void fmp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
+
+int64_t min2pow(int64_t n); // 不小于n的最小2的整数幂
+int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
+
+#else
 
 static int fmp_head_read(fmempool*);
-static int fmp_head_write(fmempool*);
+static int fmp_head_write(const fmempool*);
 static int fmp_expand(fmempool*, uint64_t); // 扩展内存
 static int fmp_reserve(fmempool*, uint64_t); // 确保有某个大小的内存块
 
@@ -34,12 +61,13 @@ static int fmp_lists_index(uint64_t); // FMP_MIN_BLOCK -> 0
 static void fmp_list_add(fmempool*, fmp_off_t, fmp_off_t);
 static void fmp_list_del(fmempool*, fmp_off_t);
 
-static void fmp_check_list(fmempool*, fmp_node_t*);
+static void fmp_check_list(const fmempool*, const fmp_node_t*);
 static void fmp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
 
 static int64_t min2pow(int64_t n); // 不小于n的最小2的整数幂
 static int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
-static void fprint_uint64(uint64_t, FILE*); // 输出uint64_t
+
+#endif
 
 // **  fmp_ init/close alloc/realloc/free  **
 
@@ -283,7 +311,7 @@ fmp_alloc_nothrow(fmempool *fmp, uint64_t size)
 // ** fmp_ read/write expand **
 
 int
-fmp_read(fmempool *fmp, fmp_off_t offset, void *buf, uint64_t size)
+fmp_read(const fmempool *fmp, fmp_off_t offset, void *buf, uint64_t size)
 {
 //	int r = fseek(fmp->fp, offset, SEEK_SET);
 	std::fstream *fs = fmp->fp;
@@ -295,7 +323,7 @@ fmp_read(fmempool *fmp, fmp_off_t offset, void *buf, uint64_t size)
 }
 
 int
-fmp_write(fmempool *fmp, fmp_off_t offset, const void *buf, uint64_t size)
+fmp_write(const fmempool *fmp, fmp_off_t offset, const void *buf, uint64_t size)
 {
 //	int r = fseek(fmp->fp, offset, SEEK_SET);
 	std::fstream *fs = fmp->fp;
@@ -320,7 +348,7 @@ fmp_head_read(fmempool *fmp)
 }
 
 int
-fmp_head_write(fmempool *fmp)
+fmp_head_write(const fmempool *fmp)
 {
 //	fseek(fmp->fp, 0, SEEK_SET);
 	std::fstream *fs = fmp->fp;
@@ -404,7 +432,7 @@ fmp_reserve(fmempool *fmp, uint64_t size)
 }
 
 void
-fmp_memcpy(fmempool *fmp, fmp_off_t dest, fmp_off_t src, uint64_t size)
+fmp_memcpy(const fmempool *fmp, fmp_off_t dest, fmp_off_t src, uint64_t size)
 {
 	uint64_t n = size / FMP_BUFSIZ;
 	uint64_t r = size % FMP_BUFSIZ;
@@ -531,11 +559,11 @@ fmp_list_del(fmempool *fmp, fmp_off_t offset)
 // ** fmp_ check, check_list, throw_ofm, print **
 
 void
-fmp_check(fmempool *fmp)
+fmp_check(const fmempool *fmp)
 {
 	assert(fmp);
-	fmp_head_t *head = &fmp->head;
-	fmp_node_t *lists = fmp->lists;
+	const fmp_head_t *head = &fmp->head;
+	const fmp_node_t *lists = fmp->lists;
 	uint64_t capacity = head->end - head->begin;
 	assert(0 < head->nlists && head->nlists <= FMP_NLISTS);
 	assert(head->nalloc < capacity);
@@ -559,7 +587,7 @@ fmp_check(fmempool *fmp)
 }
 
 void
-fmp_check_list(fmempool *fmp, fmp_node_t *list)
+fmp_check_list(const fmempool *fmp, const fmp_node_t *list)
 {
 	fmp_node_t node, next_node;
 	fmp_off_t node_off = list->record.index + 1;
@@ -577,75 +605,36 @@ fmp_check_list(fmempool *fmp, fmp_node_t *list)
 void
 fmp_throw_ofm(const char *file, uint64_t line, const char *func, const char *msg, uint64_t size)
 {
-	FILE *fp = stderr;
-	fprintf(fp, "fmempool: %s:", file);
-	fprint_uint64(line, fp);
-	fprintf(fp, ": %s[size = ", func);
-	fprint_uint64(size, fp);
-	fprintf(fp, "]: %s\n", msg);
+	std::cerr<<"fmempool: "<<file<<":"<<line<<": "<<func<<"[size = "<<size<<"]: "<<msg<<std::endl;
 	abort();
 }
 
 void
-fmp_print(fmempool *fmp)
+fmp_print(const fmempool *fmp, std::ostream& out)
 {
 	assert(fmp);
-	FILE *fp = stdout;
-
-	fmp_head_t *head = &fmp->head;
+	const fmp_head_t *head = &fmp->head;
 	uint64_t capacity = head->end - head->begin;
-	printf("[ ");
-	fprint_uint64(capacity, fp);
-	printf(" total, ");
-	fprint_uint64(head->nfree, fp);
-	printf(" free, ");
-	fprint_uint64(head->nalloc, fp);
-	printf(" used ]\n");
+	out<<"[ "<<capacity<<" total, "<<head->nfree<<" free, "<<head->nalloc<<" used ]\n";
 
 	if ( ! capacity ) {
-		printf("||\n\n");
+		out<<"||\n"<<std::endl;
 		return;
 	}
 
 	fmp_node_t node;
 	fmp_off_t offset = head->begin;
-	printf("|");
+	out<<"|";
 	while ( offset < head->end ) {
 		assert(fmp_read(fmp, offset, &node, NODE_SIZE));
 		uint64_t cap = FMP_MIN_BLOCK << node.record.index;
-		if ( ! node.record.is_used ) {
-			fprint_uint64(cap, fp);
-			printf("|");
-		} else {
-#if 0
-			printf("-");
-			fprint_uint64(node.record.size, fp);
-			printf("|");
-#else
-		//      printf("<");
-			fprint_uint64(node.record.size, fp);
-			printf("/");
-			fprint_uint64(cap, fp);
-		//      printf(">");
-			printf("|");
-#endif
-		}
+		if ( ! node.record.is_used )
+			out<<cap<<"|";
+		else
+			out<<node.record.size<<"/"<<cap<<"|";
 		offset += cap;
 	}
-	puts("\n");
-}
-
-void
-fprint_uint64(uint64_t i, FILE *fp)
-{
-	char stack[24];
-	int sp = 0;
-	do {
-		stack[sp++] = '0' + (i % 10);
-		i /= 10;
-	} while ( i );
-	while ( --sp >= 0 )
-		fputc(stack[sp], fp);
+	out<<'\n'<<std::endl;
 }
 
 // ** min2pow, int64_highest_bit **
@@ -692,7 +681,77 @@ int64_highest_bit(uint64_t i) // 0 ~ 63
 	return n;
 }
 
-#ifdef __cplusplus
+} // namespace c
+
+fmempool::fmempool(std::fstream *fs, uint64_t size, int flags)
+{
+	fmp = akm::c::fmp_init(fs, size, flags);
+	assert(fmp);
 }
-#endif
+
+fmempool::~fmempool()
+{
+	akm::c::fmp_close(fmp);
+}
+
+fmp_off_t
+fmempool::alloc(uint64_t size)
+{
+	return akm::c::fmp_alloc(fmp, size);
+}
+
+fmp_off_t
+fmempool::realloc(fmp_off_t offset, uint64_t size)
+{
+	return akm::c::fmp_realloc(fmp, offset, size);
+}
+
+void
+fmempool::free(fmp_off_t offset)
+{
+	akm::c::fmp_free(fmp, offset);
+}
+
+bool
+fmempool::read(fmp_off_t offset, void *buf, uint64_t size) const
+{
+	return akm::c::fmp_read(fmp, offset, buf, size);
+}
+
+bool
+fmempool::write(fmp_off_t offset, const void *buf, uint64_t size) const
+{
+	return akm::c::fmp_write(fmp, offset, buf, size);
+}
+
+bool
+fmempool::flush() const
+{
+	if ( ! akm::c::fmp_head_write(fmp) )
+		return false;
+	std::fstream *fs = fmp->fp;
+	fs->flush();
+	return fs->good();
+}
+
+void
+fmempool::memcpy(fmp_off_t dest, fmp_off_t src, uint64_t size) const
+{
+	akm::c::fmp_memcpy(fmp, dest, src, size);
+}
+
+void
+fmempool::check() const
+{
+	akm::c::fmp_check(fmp);
+}
+
+std::ostream&
+operator<< (std::ostream& out, const fmempool& fmp)
+{
+	akm::c::fmp_print(fmp.fmp, out);
+	return out;
+}
+
+} // namespace akm
 

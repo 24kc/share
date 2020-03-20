@@ -8,7 +8,11 @@
 #define FMP_THROW  (0x8) // 内存不足时抛出异常(使用abort())
 #define FMP_NOADD  (0x10) // 内存不足时不自动扩展内存
 
+namespace akm {
+
 typedef uint64_t fmp_off_t;
+
+namespace c {
 
 // fmempool head data
 typedef struct {
@@ -47,10 +51,6 @@ typedef struct {
 	void *buf;
 } fmempool;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 fmempool* fmp_init (std::fstream *fp, uint64_t size, int flags);
 // 文件内存池初始化, 内存池大小不小于size
 	// fp: 用于建立内存池的文件, 必须可读写
@@ -69,21 +69,49 @@ fmp_off_t fmp_realloc (fmempool *fmp, fmp_off_t offset, uint64_t size);
 void fmp_free (fmempool *fmp, fmp_off_t offset);
 // 类似 malloc, realloc, free
 
-int fmp_read(fmempool *fmp, fmp_off_t offset, void *buf, uint64_t size);
-int fmp_write(fmempool *fmp, fmp_off_t offset, const void *buf, uint64_t size);
+int fmp_read(const fmempool *fmp, fmp_off_t offset, void *buf, uint64_t size);
+int fmp_write(const fmempool *fmp, fmp_off_t offset, const void *buf, uint64_t size);
 // 读写数据, 成功返回非0, 失败返回0
 
-void fmp_memcpy(fmempool *fmp, fmp_off_t dest, fmp_off_t src, uint64_t size);
+void fmp_memcpy(const fmempool *fmp, fmp_off_t dest, fmp_off_t src, uint64_t size);
 // 类似memcpy
 
 /* for debug: */
-void fmp_check (fmempool *fmp);
+void fmp_check (const fmempool *fmp);
 // 初步检查内存池数据是否有误, 出错直接抛出异常
-void fmp_print (fmempool *fmp);
+void fmp_print (const fmempool *fmp);
 // 输出内存池中内存分布信息
 
-#ifdef __cplusplus
-}
-#endif
+} // namespace c
+
+class fmempool {
+  public:
+	fmempool(std::fstream *fs, uint64_t size, int flags);
+	~fmempool();
+
+	fmp_off_t alloc(uint64_t size);
+	fmp_off_t realloc(fmp_off_t offset, uint64_t size);
+	void free(fmp_off_t offset);
+
+	bool read(fmp_off_t offset, void *buf, uint64_t size) const;
+	// 在偏移offset处读取size个字节的数据到buf
+	bool write(fmp_off_t offset, const void *buf, uint64_t size) const;
+	// 在偏移offset处写入buf的size个字节的数据
+	
+
+	bool flush() const; // 刷新, 确保 对内存池的写操作 写入磁盘
+	void memcpy(fmp_off_t dest, fmp_off_t src, uint64_t size) const;
+	// 类似std::memcpy, 在内存池中迁移数据
+
+	// 仅供调试:
+	void check() const; // 初步检查内存池数据是否有误, 出错直接终止程序(abort())
+	friend std::ostream& operator<< (std::ostream& out, const fmempool& fmp);
+	// 输出内存池中内存分布信息
+
+  private:
+	c::fmempool *fmp;
+};
+
+} // namespace akm
 
 #endif // _FMEMPOOL_H_
