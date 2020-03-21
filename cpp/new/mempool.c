@@ -9,7 +9,7 @@
 #define __func__ __FUNCTION__
 #endif
 
-#define MP_MIN_BLOCK  (16)
+static const uint64_t MP_MIN_BLOCK = 16;
 // 2^n >= 16
 
 typedef unsigned char BYTE;
@@ -17,9 +17,9 @@ typedef unsigned char BYTE;
 // 记录内存分配信息
 typedef struct mp_record_t {
 	uint64_t size:48; // 提供的内存大小
-	unsigned index:8; // lists[index], (index:6)
-	unsigned :7;
-	unsigned is_used:1; // 是否已分配
+	uint64_t index:8; // lists[index], (index:6)
+	uint64_t :7;
+	uint64_t is_used:1; // 是否已分配
 } mp_record_t;
 
 // mempool record node, use offset
@@ -31,7 +31,7 @@ typedef struct {
 	uint64_t next;
 } mp_node_t;
 
-#define OFF_NULL  (0)
+#define OFF_NULL  (0L)
 #define OFF(ptr)  ( (BYTE*)ptr - (BYTE*)mp )
 #define PTR(off)  ( (mp_node_t*) ((BYTE*)mp + off) )
 
@@ -58,8 +58,9 @@ static void mp_list_del(mempool*, mp_node_t*);
 static void mp_check_list(mempool*, mp_node_t*);
 static void mp_throw_ofm(const char*, uint64_t, const char*, const char*, uint64_t);
 
-static uint64_t min2pow(uint64_t n); // 不小于n的最小2的整数幂
-static int int64_highest_bit(uint64_t i); // 最高位1是第几位 (0~63)
+static int64_t min2pow(int64_t n); // 不小于n的最小2的整数幂
+static int int64_highest_bit(uint64_t); // 最高位1是第几位 (0~63)
+static void fprint_uint64(uint64_t, FILE*); // 输出uint64_t
 
 
 // **  mp_ init alloc/realloc/free  **
@@ -141,7 +142,7 @@ mp_alloc(mempool *mp, size_t size)
 		mp_node_t *head = &lists[i];
 		if ( head->next ) {
 			mp_node_t *node = PTR(head->next);
-			mp_list_del(mp, head);
+			mp_list_del(mp, PTR(head->next));
 			while ( i > index ) {
 				mp_node_t *new_node = mp_block_split(node);
 				mp_list_add(mp, --head, new_node);
@@ -192,7 +193,7 @@ mp_realloc(mempool *mp, void *mem, size_t size)
 			mp->nalloc += size;
 			mp->nalloc -= node->record.size;
 			mp->nfree -= capacity;
-			mp_list_del(mp, PTR(buddy->prev));
+			mp_list_del(mp, buddy);
 			++node->record.index;
 			node->record.size = size;
 			return &node->next;
@@ -242,13 +243,12 @@ mp_free(mempool *mp, void *mem)
 	mp->nalloc -= node->record.size;
 	mp->nfree += MP_MIN_BLOCK << node->record.index;
 
-	mp_node_t *buddy = mp_get_buddy(mp, node);
-	while ( buddy ) {
-		mp_list_del(mp, PTR(buddy->prev));
+	mp_node_t *buddy;
+	while ( (buddy = mp_get_buddy(mp, node)) ) {
+		mp_list_del(mp, buddy);
 		if ( node > buddy )
 			node = buddy;
 		++node->record.index;
-		buddy = mp_get_buddy(mp, node);
 	}
 
 	mp_node_t *lists = (mp_node_t*)&mp[1];
@@ -269,14 +269,14 @@ mp_alloc_nothrow(mempool *mp, uint64_t size)
 
 // **  mp_ max_block_size get_buddy  **
 
-uint64_t
+size_t
 mp_max_block_size(mempool *mp)
 {
 	mp_node_t *lists = (mp_node_t*)&mp[1];
 	for (int index=mp->nlists-1; index>=0; --index) {
 		mp_node_t *head = &lists[index];
 		if ( head->next )
-			return (MP_MIN_BLOCK << index) - RECORD_SIZE;
+			return (size_t)((MP_MIN_BLOCK << index) - RECORD_SIZE);
 	}
 	return 0;
 }
@@ -343,9 +343,10 @@ mp_list_add(mempool *mp, mp_node_t *node, mp_node_t *new_node)
 void
 mp_list_del(mempool *mp, mp_node_t *node)
 {
-	node->next = PTR(node->next)->next;
+	mp_node_t *prev_node = PTR(node->prev);
+	prev_node->next = node->next;
 	if ( node->next )
-		PTR(node->next)->prev = OFF(node);
+		PTR(node->next)->prev = node->prev;
 }
 
 // ** mp_ check, check_list, throw_ofm, print **
@@ -367,7 +368,7 @@ mp_check(mempool *mp)
 	BYTE *end = (BYTE*)node + mp->capacity;
 	while ( (BYTE*)node < end ) {
 		uint64_t cap = MP_MIN_BLOCK << node->record.index;
-		assert( node->record.index < mp->nlists );
+		assert( node->record.index < (unsigned)mp->nlists );
 		if ( node->record.is_used )
 			assert(node->record.size + RECORD_SIZE <= cap);
 		node = (mp_node_t*)((BYTE*)node + cap);
@@ -380,7 +381,7 @@ mp_check_list(mempool *mp, mp_node_t *list)
 	mp_node_t *p, *p1;
 
 	p = list;
-	assert(p->record.index < mp->nlists);
+	assert(p->record.index < (unsigned)mp->nlists);
 	while ( p->next ) {
 		p1 = PTR(p->next);
 		assert(PTR(p1->prev) == p);
@@ -392,7 +393,12 @@ mp_check_list(mempool *mp, mp_node_t *list)
 void
 mp_throw_ofm(const char *file, uint64_t line, const char *func, const char *msg, uint64_t size)
 {
-	fprintf(stderr, "mempool: %s:%lu: %s[size = %lu]: %s\n", file, line, func, size, msg);
+	FILE *fp = stderr;
+	fprintf(fp, "mempool: %s:", file);
+	fprint_uint64(line, fp);
+	fprintf(fp, ": %s[size = ", func);
+	fprint_uint64(size, fp);
+	fprintf(fp, "]: %s\n", msg);
 	abort();
 }
 
@@ -400,8 +406,16 @@ void
 mp_print(mempool *mp)
 {
 	assert(mp);
+	FILE *fp = stdout;
 
-	printf("[ %d lists, %lu total, %lu free, %lu used ]\n", mp->nlists, mp->capacity, mp->nfree, mp->nalloc);
+	printf("[ %d lists, ", mp->nlists);
+	fprint_uint64(mp->capacity, fp);
+	printf(" total, ");
+	fprint_uint64(mp->nfree, fp);
+	printf(" free, ");
+	fprint_uint64(mp->nalloc, fp);
+	printf(" used ]\n");
+
 	if ( ! mp->capacity ) {
 		printf("||\n\n");
 		return;
@@ -413,23 +427,45 @@ mp_print(mempool *mp)
 	printf("|");
 	while ( (BYTE*)node < end ) {
 		uint64_t cap = MP_MIN_BLOCK << node->record.index;
-		if ( ! node->record.is_used )
-			printf("%lu|", cap);
-		else
-#if 1
-			printf("-%lu|", (uint64_t)node->record.size);
+		if ( ! node->record.is_used ) {
+			fprint_uint64(cap, fp);
+			printf("|");
+		} else {
+#if 0
+			printf("-");
+			fprint_uint64(node->record.size, fp);
+			printf("|");
 #else
-			printf("<%lu/%lu>|", node->size, cap);
+		//	printf("<");
+			fprint_uint64(node->record.size, fp);
+			printf("/");
+			fprint_uint64(cap, fp);
+		//	printf(">");
+			printf("|");
 #endif
+		}
 		node = (mp_node_t*)((BYTE*)node + cap);
 	}
 	puts("\n");
 }
 
+void
+fprint_uint64(uint64_t i, FILE *fp)
+{
+	char stack[24];
+	int sp = 0;
+	do {
+		stack[sp++] = '0' + (i % 10);
+		i /= 10;
+	} while ( i );
+	while ( --sp >= 0 )
+		fputc(stack[sp], fp);
+}
+
 // ** min2pow, int64_highest_bit **
 
-uint64_t
-min2pow(uint64_t n) { // 不小于n的 最小2的幂
+int64_t
+min2pow(int64_t n) { // 不小于n的 最小2的幂
 	--n;
 	n |= n>>1;
 	n |= n>>2;
