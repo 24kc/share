@@ -317,7 +317,7 @@ mp_check(mempool *mp)
 	while ( node->next ) {
 		mp_node_t *next = PTR(node->next);
 		if ( node->is_used )
-			assert(node->remain < 16);
+			assert(node->remain <= 16);
 		assert(OFF(next) < end);
 		node = next;
 	}
