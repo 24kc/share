@@ -20,7 +20,7 @@ typedef struct {
 } mp_node_t;
 
 #define OFF_NULL  (0)
-#define OFF(ptr)  ( (BYTE*)ptr - (BYTE*)mp )
+#define OFF(ptr)  ( (uint64_t) ((BYTE*)ptr - (BYTE*)mp) )
 #define PTR(off)  ( (mp_node_t*) ((BYTE*)mp + off) )
 
 #define MP_SIZE  ( sizeof(mempool) )
