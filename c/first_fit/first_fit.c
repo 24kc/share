@@ -84,8 +84,16 @@ mp_alloc(mempool *mp, size_t size)
 	uint64_t block_size = NODE_SIZE + (size & ~7);
 	if ( size & 7 || ! size )
 		block_size += 8;
-	mp_node_t *node = PTR(mp->first_free);
 
+	mp_node_t *node = PTR(mp->first_free);
+	while ( node->next ) {
+		if ( ! node->is_used )
+			break;
+		node = PTR(node->next);
+	}
+	mp->first_free = OFF(node);
+
+	node = PTR(mp->first_free);
 	while ( node->next ) {
 		mp_node_t *next = PTR(node->next);
 		if ( node->is_used ) {
