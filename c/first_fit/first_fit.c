@@ -93,7 +93,6 @@ mp_alloc(mempool *mp, size_t size)
 	}
 	mp->first_free = OFF(node);
 
-	node = PTR(mp->first_free);
 	while ( node->next ) {
 		mp_node_t *next = PTR(node->next);
 		if ( node->is_used ) {
