@@ -3,6 +3,9 @@
 
 int main()
 {
+	char a[1200];
+	_mp = mp_init(a, sizeof(a), MP_THROW);
+
 	int i, n;
 	char *buffer;
 
