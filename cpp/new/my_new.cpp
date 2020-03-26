@@ -3,10 +3,10 @@
 
 #include <mutex>
 
-#define MY_MPSIZE  ( 24-'k' +999999 )
+//#define MY_MPSIZE  ( 24-'k' +999999 )
 
 namespace {
-
+/*
 class my_new_init {
   public:
 	my_new_init() {
@@ -14,7 +14,7 @@ class my_new_init {
 		akm::mp = mp_init(mem, sizeof(mem), MP_THROW);
 	}
 } my_new_init;
-
+*/
 std::mutex mp_mutex;
 
 } // namespace <anonymous>
