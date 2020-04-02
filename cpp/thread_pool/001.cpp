@@ -37,7 +37,7 @@ int main()
 
 	clock_t t1 = clock();
 
-	cout<<"waiting time is "<<t1-t0<<endl;
+	cout<<"waiting time is "<<(t1-t0)*1000.0/CLOCKS_PER_SEC<<"s."<<endl;
 
 	for (int i=0; i<N; ++i)
 		cout<<s[i].get()<<endl;
