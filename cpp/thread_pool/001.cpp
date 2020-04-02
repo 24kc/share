@@ -23,7 +23,7 @@ int main()
 	constexpr int N = 10;
 	future<string> s[N];
 
-	clock_t t0 = clock();
+	auto t0 = chrono::system_clock::now();
 
 	for (int i=0; i<N; ++i)
 		s[i] = pool.push(f, i+1);
@@ -35,9 +35,10 @@ int main()
 		s[i].wait();
 	// 等待任务完成
 
-	clock_t t1 = clock();
+	auto t1 = chrono::system_clock::now();
 
-	cout<<"waiting time is "<<(t1-t0)*1000.0/CLOCKS_PER_SEC<<"s."<<endl;
+	chrono::duration<double> t = t1 - t0;
+	cout<<"waiting time is "<<t.count()<<"s."<<endl;
 
 	for (int i=0; i<N; ++i)
 		cout<<s[i].get()<<endl;
