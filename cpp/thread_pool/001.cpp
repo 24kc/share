@@ -1,18 +1,19 @@
 #include <iostream>
 #include <string>
-#include <ctime>
 #include "thread_pool.h"
 using namespace std;
 
+mutex mtx;
+
 // 测试函数
-string f(int n)
+void f(int n)
 {
 	// 休眠n个0.1秒
+	{
+		lock_guard<mutex> lk(mtx);
+		cout<<this_thread::get_id()<<" sleep_for "<<n/10.0<<"s"<<endl;
+	}
 	this_thread::sleep_for(chrono::milliseconds(n*100));
-	string s = "ABC";
-	for (int i=0; i<n; ++i)
-		s += "傻逼";
-	return s;
 }
 
 int main()
@@ -20,29 +21,42 @@ int main()
 	// 线程池, 4个线程
 	akm::thread_pool<4> pool;
 
-	constexpr int N = 10;
-	future<string> s[N];
+	int N = 10;
 
 	auto t0 = chrono::system_clock::now();
 
+	cout<<"提交 "<<N<<" 个任务, 正在提交..."<<endl;
 	for (int i=0; i<N; ++i)
-		s[i] = pool.push(f, i+1);
+		pool.thread(f, i+1);
 	// 向线程池提交N个任务
+	cout<<"提交成功, 等待任务完成..."<<endl;
 
-	cout<<"push "<<N<<" tasks, waiting..."<<endl;
-
-	for (int i=0; i<N; ++i)
-		s[i].wait();
+	pool.join();
 	// 等待任务完成
 
 	auto t1 = chrono::system_clock::now();
 
 	chrono::duration<double> t = t1 - t0;
-	cout<<"waiting time is "<<t.count()<<"s."<<endl;
+	cout<<"\n任务完成, 等待时间是 "<<t.count()<<" 秒."<<endl;
+	// 等待时间
 
+	N *= 2;
+	cout<<"\n\n";
+
+	cout<<"提交 "<<N<<" 个任务, 正在提交..."<<endl;
 	for (int i=0; i<N; ++i)
-		cout<<s[i].get()<<endl;
-	// 获取计算结果并输出
+		pool.thread(f, i+1);
+	// 向线程池提交2N个任务
+	cout<<"提交成功, 等待任务完成..."<<endl;
+
+	pool.join();
+	// 等待任务完成
+
+	auto t2 = chrono::system_clock::now();
+
+	t = t2 - t1;
+	cout<<"\n任务完成, 等待时间是 "<<t.count()<<" 秒."<<endl;
+	// 等待时间
 
 	return 24-'k';
 }
