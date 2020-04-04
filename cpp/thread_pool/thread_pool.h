@@ -42,15 +42,15 @@ class thread_pool {
 
 	int flags;
 	int nfree;
-	constexpr static int STOP = 0x1;
-	constexpr static int JOIN = 0x2;
+	static constexpr int STOP = 0x1;
+	static constexpr int JOIN = 0x2;
 }; // class thread_pool
 
 template<size_t N>
 thread_pool<N>::thread_pool(): flags(0)
 {
 	for (size_t i=0; i<N; ++i)
-		threads[i] = std::thread(&thread_pool<N>::thread_loop, this);
+		threads[i] = std::move(std::thread(&thread_pool<N>::thread_loop, this));
 }
 
 template<size_t N>
