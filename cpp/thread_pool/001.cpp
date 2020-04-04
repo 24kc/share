@@ -23,7 +23,7 @@ int main()
 
 	int N = 10;
 
-	auto t0 = chrono::system_clock::now();
+	auto t0 = chrono::steady_clock::now();
 
 	cout<<"提交 "<<N<<" 个任务, 正在提交..."<<endl;
 	for (int i=0; i<N; ++i)
@@ -34,7 +34,7 @@ int main()
 	pool.join();
 	// 等待任务完成
 
-	auto t1 = chrono::system_clock::now();
+	auto t1 = chrono::steady_clock::now();
 
 	chrono::duration<double> t = t1 - t0;
 	cout<<"\n任务完成, 等待时间是 "<<t.count()<<" 秒."<<endl;
@@ -52,7 +52,7 @@ int main()
 	pool.join();
 	// 等待任务完成
 
-	auto t2 = chrono::system_clock::now();
+	auto t2 = chrono::steady_clock::now();
 
 	t = t2 - t1;
 	cout<<"\n任务完成, 等待时间是 "<<t.count()<<" 秒."<<endl;

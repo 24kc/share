@@ -98,10 +98,11 @@ template<size_t N>
 void
 thread_pool<N>::join()
 {
-	std::unique_lock<std::mutex> lock(mutex);
-	flags |= STOP|JOIN;
 	nfree = 0;
+	flags |= STOP|JOIN;
 	condition.notify_all();
+
+	std::unique_lock<std::mutex> lock(mutex);
 	condition.wait(lock, [this]{ return nfree == N; });
 }
 
