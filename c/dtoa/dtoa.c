@@ -63,6 +63,9 @@ dtoa(long double d, char *buf, int radix)
 		--exp;
 	}
 
+	if ( ! exp )
+		buf[sp++] = basefix[0];
+
 	if ( d ) {
 		buf[sp++] = '.';
 		while ( d ) {
