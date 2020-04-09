@@ -63,6 +63,11 @@ int main(int argc, char **argv)
 			line.push_back(ch);
 		}
 		line.push_back('\n');
+		pos = line.find(';') - 1;
+		while ( isspace(line[pos]) ) {
+			line.erase(pos, 1);
+			--pos;
+		}
 		out.write(line.c_str(), line.size());
 	}
 }
