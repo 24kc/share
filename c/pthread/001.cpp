@@ -39,10 +39,13 @@ int main(int argc, char **argv)
 			if ( in.eof() )
 				break;
 		}
+		size_t pos = 0;
+		while ( (pos = line.find("__restrict", pos)) != string::npos )
+			line.erase(pos, 2);
+
 		s.swap(line);
 		line.clear();
 		skip_space = true;
-		size_t pos;
 		if ( (pos = s.find("__attribute__")) != string::npos ) {
 			size_t endpos = s.find(';');
 			s.erase(pos, endpos - pos);
