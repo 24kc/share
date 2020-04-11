@@ -1,32 +1,32 @@
 #include <stdio.h>
-#define type int*
+
+#define type char
 #include "array.h"
 
-int main() 
+int cmp(const char *p1, const char *p2)
 {
-	int i;
-	int a1[5];
-	int *a2[5] = {a1, a1+1, a1+2, a1+3, a1+4};
-	array a = new_array(5, a2);
+	return (*p1 > *p2) - (*p1 < *p2);
+}
 
-	for (i=0; i<10; ++i)
-		array_add(&a, NULL);
+int main() {
+	int i;
+	char s[] = {"ABC is just a sb"};
+	char s2[] = {"sb"};
+	array a = new_array(sizeof(s)-1, s);
 
 	for (i=0; i<a.length; ++i)
-		printf("%p ", a.data[i]);
+		printf("%c", a.data[i]);
 	puts("");
 
-	array_remove(&a, 3);
-	array_remove(&a, 3);
-	array_remove(&a, 3);
-	array_remove(&a, 3);
-	array_remove(&a, 3);
+	array_sort(&a, cmp);
+	array_remove_many(&a, 0, 4);
+	array_insert_many(&a, 3, sizeof(s2), s2);
 
-	for (i=0; i<a.length; ++i)
-		printf("%p ", a.data[i]);
+	printf("%s", a.data);
 	puts("");
 
 	delete_array(&a);
 
-	return 24-'k';
+	return 0;
 }
+
