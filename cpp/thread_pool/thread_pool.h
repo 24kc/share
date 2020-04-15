@@ -1,12 +1,11 @@
 #ifndef _THREAD_POOL_H_
 #define _THREAD_POOL_H_
 
-#include <functional>
-#include <queue>
-#include <thread>
 #include <mutex>
 #include <condition_variable>
-#include <future>
+#include <queue>
+#include <thread>
+#include <functional>
 
 namespace akm {
 
@@ -19,11 +18,6 @@ class thread_pool {
 	~thread_pool();
 
 	template<class F, class... Args>
-	auto push(F&& f, Args&&... args)
-		-> std::future<typename std::result_of<F(Args...)>::type>;
-	// 向线程池提交任务, 返回future
-
-	template<class F, class... Args>
 	void thread(F&& f, Args&&... args);
 	// 向线程池提交任务
 
@@ -34,11 +28,12 @@ class thread_pool {
 	void thread_loop();
 
   private:
-	std::thread threads[N];
+	std::mutex mutex;
+	std::condition_variable condition, cv_join;
+
 	std::queue<std::function<void()>> tasks;
 
-	std::mutex mutex;
-	std::condition_variable condition;
+	std::thread threads[N];
 
 	int flags;
 	int nfree;
@@ -65,25 +60,6 @@ thread_pool<N>::~thread_pool()
 
 template<size_t N>
 template<class F, class... Args>
-std::future<typename std::result_of<F(Args...)>::type>
-thread_pool<N>::push(F&& f, Args&&... args)
-{
-	using return_type = typename std::result_of<F(Args...)>::type;
-	auto task = std::make_shared<std::packaged_task<return_type()>>(
-		std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-	);
-
-	{
-		std::lock_guard<std::mutex> lock(mutex);
-		tasks.emplace([task]{ (*task)(); });
-	}
-	condition.notify_one();
-
-	return task->get_future();
-}
-
-template<size_t N>
-template<class F, class... Args>
 void
 thread_pool<N>::thread(F&& f, Args&&... args)
 {
@@ -102,8 +78,9 @@ thread_pool<N>::join()
 	flags |= STOP|JOIN;
 	condition.notify_all();
 
+	std::mutex mutex;
 	std::unique_lock<std::mutex> lock(mutex);
-	condition.wait(lock, [this]{ return nfree == N; });
+	cv_join.wait(lock, [this]{ return nfree == N; });
 }
 
 template<size_t N>
@@ -119,9 +96,14 @@ thread_pool<N>::thread_loop()
 				if ( flags & JOIN ) {
 					if ( ++nfree == N ) {
 						flags &= ~(STOP|JOIN);
+						nfree = 1;
+						lock.unlock();
 						condition.notify_all();
-					} else
-						condition.wait(lock, [this]{ return nfree == N || ! tasks.empty(); });
+					} else {
+						condition.wait(lock, [this]{ return ! (flags & JOIN); });
+						if ( ++nfree == N )
+							cv_join.notify_one();
+					}
 					task = std::move([]{});
 				} else
 					return;
@@ -137,4 +119,3 @@ thread_pool<N>::thread_loop()
 } // namespace akm
 
 #endif // _THREAD_POOL_H_
-

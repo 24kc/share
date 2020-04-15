@@ -13,14 +13,14 @@ void f(int n)
 		lock_guard<mutex> lk(mtx);
 		cout<<this_thread::get_id()<<" sleep_for "<<n/10.0<<"s"<<endl;
 	}
-	this_thread::sleep_for(chrono::milliseconds(n*100));
+//	this_thread::sleep_for(chrono::milliseconds(n*100));
 }
+
+// 线程池, 4个线程
+akm::thread_pool<4> pool;
 
 int main()
 {
-	// 线程池, 4个线程
-	akm::thread_pool<4> pool;
-
 	int N = 10;
 
 	auto t0 = chrono::steady_clock::now();
@@ -57,7 +57,4 @@ int main()
 	t = t2 - t1;
 	cout<<"\n任务完成, 等待时间是 "<<t.count()<<" 秒."<<endl;
 	// 等待时间
-
-	return 24-'k';
 }
-
