@@ -66,5 +66,6 @@ int main()
 		pool.thread(&f3);
 		pool.thread(&f4);
 	}
-	pool.join();
+	// 不等待任务完成
+	// pool.join();
 }
