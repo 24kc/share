@@ -1,10 +1,10 @@
 #ifndef _THREAD_POOL_H_
 #define _THREAD_POOL_H_
 
+#include <thread>
+#include <queue>
 #include <mutex>
 #include <condition_variable>
-#include <queue>
-#include <thread>
 #include <functional>
 
 namespace akm {
@@ -28,18 +28,19 @@ class thread_pool {
 	void thread_loop();
 
   private:
+	std::thread threads[N];
+
 	std::mutex mutex;
 	std::condition_variable condition, cv_join;
-
 	std::queue<std::function<void()>> tasks;
-
-	std::thread threads[N];
 
 	int flags;
 	int nfree;
+
 	static constexpr int STOP = 0x1;
 	static constexpr int JOIN = 0x2;
 }; // class thread_pool
+
 
 template<size_t N>
 thread_pool<N>::thread_pool(): flags(0)
@@ -74,13 +75,13 @@ template<size_t N>
 void
 thread_pool<N>::join()
 {
+	std::unique_lock<std::mutex> lock(mutex);
+
 	nfree = 0;
 	flags |= STOP|JOIN;
 	condition.notify_all();
 
-	std::mutex mutex;
-	std::unique_lock<std::mutex> lock(mutex);
-	cv_join.wait(lock, [this]{ return nfree == N; });
+	cv_join.wait(lock);
 }
 
 template<size_t N>
@@ -100,7 +101,7 @@ thread_pool<N>::thread_loop()
 						lock.unlock();
 						condition.notify_all();
 					} else {
-						condition.wait(lock, [this]{ return ! (flags & JOIN); });
+						condition.wait(lock);
 						if ( ++nfree == N )
 							cv_join.notify_one();
 					}
