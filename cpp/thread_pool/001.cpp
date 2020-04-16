@@ -39,11 +39,7 @@ void f4()
 int main()
 {
 	// 线程池, 3个线程
-#if 1
-	auto& pool = *new akm::thread_pool<3>();
-#else
 	akm::thread_pool<3> pool;
-#endif
 
 	cout.setf(ios_base::unitbuf);
 	constexpr int N = 10;

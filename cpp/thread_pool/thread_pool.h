@@ -10,6 +10,37 @@
 namespace akm {
 
 template<size_t N>
+class thread_pool;
+
+template<size_t N>
+class thread_pool_base {
+  private:
+	thread_pool_base() = default;
+	thread_pool_base(const thread_pool_base&) = delete;
+	thread_pool_base& operator= (const thread_pool_base&) = delete;
+	~thread_pool_base() = default;
+
+  private:
+	void thread_loop();
+
+  private:
+	friend thread_pool<N>;
+
+	std::thread threads[N];
+
+	std::mutex mutex;
+	std::condition_variable condition, cv_join;
+	std::queue<std::function<void()>> tasks;
+
+	int flags;
+	int nfree;
+	int nexit;
+
+	static constexpr int STOP = 0x1;
+	static constexpr int JOIN = 0x2;
+}; // class thread_pool_base
+
+template<size_t N>
 class thread_pool {
   public:
 	thread_pool();
@@ -25,38 +56,42 @@ class thread_pool {
 	// 等待所有已提交任务完成
 
   private:
-	void thread_loop();
+	thread_pool_base<N> *pool;
 
-  private:
-	std::thread threads[N];
-
-	std::mutex mutex;
-	std::condition_variable condition, cv_join;
-	std::queue<std::function<void()>> tasks;
-
-	int flags;
-	int nfree;
-
-	static constexpr int STOP = 0x1;
-	static constexpr int JOIN = 0x2;
+	static constexpr int STOP = thread_pool_base<N>::STOP;
+	static constexpr int JOIN = thread_pool_base<N>::JOIN;
 }; // class thread_pool
 
 
 template<size_t N>
-thread_pool<N>::thread_pool(): flags(0)
+thread_pool<N>::thread_pool()
 {
+	pool = new thread_pool_base<N>();
+
+	auto& threads = pool->threads;
+	auto& flags = pool->flags;
+	auto& nexit = pool->nexit;
+
+	flags = 0;
+	nexit = 0;
 	for (size_t i=0; i<N; ++i)
-		threads[i] = std::move(std::thread(&thread_pool<N>::thread_loop, this));
+		threads[i] = std::move(std::thread(&thread_pool_base<N>::thread_loop, pool));
 }
 
 template<size_t N>
 thread_pool<N>::~thread_pool()
 {
+	auto& threads = pool->threads;
+	auto& mutex = pool->mutex;
+	auto& condition = pool->condition;
+	auto& flags = pool->flags;
+
+	std::lock_guard<std::mutex> lock(mutex);
+	for (size_t i=0; i<N; ++i)
+		threads[i].detach();
 	flags &= ~JOIN;
 	flags |= STOP;
 	condition.notify_all();
-	for (size_t i=0; i<N; ++i)
-		threads[i].detach();
 }
 
 template<size_t N>
@@ -65,9 +100,12 @@ void
 thread_pool<N>::thread(F&& f, Args&&... args)
 {
 	{
+		auto& mutex = pool->mutex;
+		auto& tasks = pool->tasks;
 		std::lock_guard<std::mutex> lock(mutex);
 		tasks.emplace(std::bind(f, args...));
 	}
+	auto& condition = pool->condition;
 	condition.notify_one();
 }
 
@@ -75,6 +113,12 @@ template<size_t N>
 void
 thread_pool<N>::join()
 {
+	auto& mutex = pool->mutex;
+	auto& condition = pool->condition;
+	auto& cv_join = pool->cv_join;
+	auto& flags = pool->flags;
+	auto& nfree = pool->nfree;
+
 	std::unique_lock<std::mutex> lock(mutex);
 
 	nfree = 0;
@@ -86,13 +130,13 @@ thread_pool<N>::join()
 
 template<size_t N>
 void
-thread_pool<N>::thread_loop()
+thread_pool_base<N>::thread_loop()
 {
 	for (;;) {
 		std::function<void()> task;
 		{
 			std::unique_lock<std::mutex> lock(mutex);
-			condition.wait(lock, [this]{ return (flags & STOP) || ! tasks.empty(); });
+			condition.wait(lock, [&, this]{ return (flags & STOP) || ! tasks.empty(); });
 			if ( (flags & STOP) && tasks.empty() ) {
 				if ( flags & JOIN ) {
 					if ( ++nfree == N ) {
@@ -106,8 +150,11 @@ thread_pool<N>::thread_loop()
 							cv_join.notify_one();
 					}
 					task = std::move([]{});
-				} else
+				} else {
+					if ( ++nexit == N )
+						delete this;
 					return;
+				}
 			} else {
 				task = std::move(tasks.front());
 				tasks.pop();
