@@ -53,7 +53,7 @@ thread_pool_base<N>::thread_pool_base()
 	flags = 0;
 	nexit = 0;
 	for (size_t i=0; i<N; ++i)
-		threads[i] = std::move(std::thread(&thread_pool_base<N>::thread_loop, this));
+		threads[i] = std::thread(&thread_pool_base<N>::thread_loop, this);
 }
 
 template<size_t N>
@@ -74,7 +74,7 @@ thread_pool_base<N>::thread(F&& f, Args&&... args)
 {
 	{
 		std::lock_guard<std::mutex> lock(mutex);
-		tasks.emplace(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+		tasks.push(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
 	}
 	condition.notify_one();
 }
@@ -110,10 +110,12 @@ thread_pool_base<N>::thread_loop()
 						condition.notify_all();
 					} else {
 						condition.wait(lock);
-						if ( ++nfree == N )
+						if ( ++nfree == N ) {
+							lock.unlock();
 							cv_join.notify_one();
+						}
 					}
-					task = std::move([]{});
+					task = []{};
 				} else {
 					if ( ++nexit == N )
 						delete this;
