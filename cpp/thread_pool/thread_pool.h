@@ -109,7 +109,10 @@ thread_pool_base<N>::thread_loop()
 						flags &= ~(STOP|JOIN);
 						nfree = 1;
 						lock.unlock();
-						condition.notify_all();
+						if ( nfree == N )
+							cv_join.notify_one();
+						else
+							condition.notify_all();
 					} else {
 						condition.wait(lock);
 						if ( ++nfree == N ) {
