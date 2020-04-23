@@ -18,7 +18,7 @@ class thread_pool_base {
 	thread_pool_base();
 	thread_pool_base(const thread_pool_base&) = delete;
 	thread_pool_base& operator= (const thread_pool_base&) = delete;
-	~thread_pool_base();
+	~thread_pool_base() = default;
 
 	template<class F, class... Args>
 	void thread(F&& f, Args&&... args);
@@ -29,6 +29,7 @@ class thread_pool_base {
 
   private:
 	void thread_loop();
+	void stop();
 
   private:
 	friend thread_pool<N>;
@@ -57,7 +58,8 @@ thread_pool_base<N>::thread_pool_base()
 }
 
 template<size_t N>
-thread_pool_base<N>::~thread_pool_base()
+void
+thread_pool_base<N>::stop()
 {
 	std::lock_guard<std::mutex> lock(mutex);
 	for (size_t i=0; i<N; ++i)
@@ -136,7 +138,7 @@ class thread_pool {
 	thread_pool(): pool_base(new thread_pool_base<N>()) {};
 	thread_pool(const thread_pool&) = delete;
 	thread_pool& operator= (const thread_pool&) = delete;
-	~thread_pool() = default;
+	~thread_pool() { pool_base->stop(); };
 
 	template<class F, class... Args>
 	void thread(F&& f, Args&&... args)
