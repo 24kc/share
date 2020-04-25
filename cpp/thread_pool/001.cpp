@@ -1,39 +1,19 @@
-#include <iostream>
 #include "thread_pool.h"
+#include <iostream>
+#include <string>
 using namespace std;
 
-int num = 1;
-
-void f1()
+void f(string& s)
 {
-	while ( num != 1 )
-		;
-	cout<<'A';
-	++num;
+	this_thread::sleep_for(0.3s);
+	cout<<s<<endl;
 }
 
-void f2()
+void g(string&& s)
 {
-	while ( num != 2 )
-		;
-	cout<<'B';
-	++num;
-}
-
-void f3()
-{
-	while ( num != 3 )
-		;
-	cout<<'C';
-	++num;
-}
-
-void f4()
-{
-	while ( num != 4 )
-		;
-	cout<<"D"<<endl;
-	num = 1;
+	cout<<s<<endl;
+	this_thread::sleep_for(0.3s);
+	cout<<"g() end"<<endl;
 }
 
 int main()
@@ -41,27 +21,17 @@ int main()
 	// 线程池, 3个线程
 	akm::thread_pool<3> pool;
 
-	cout.setf(ios_base::unitbuf);
-	constexpr int N = 10;
+	string s = "ABC";
 
 	// 向线程池提交任务
-	for (int i=0; i<N; ++i) {
-		pool.thread(&f1);
-		pool.thread(&f2);
-		pool.thread(&f3);
-		pool.thread(&f4);
-	}
+	pool.thread(&string::push_back, &s, 'D');
+	pool.thread(f, ref(s));
+
 	// 等待任务完成
 	pool.join();
 
-	cout<<endl;
-
-	for (int i=0; i<N; ++i) {
-		pool.thread(&f1);
-		pool.thread(&f2);
-		pool.thread(&f3);
-		pool.thread(&f4);
-	}
+	// 向线程池提交任务
+	pool.thread(g, s);
 	// 不等待任务完成
 	// pool.join();
 }

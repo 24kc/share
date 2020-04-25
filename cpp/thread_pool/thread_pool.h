@@ -6,8 +6,33 @@
 #include <mutex>
 #include <condition_variable>
 #include <functional>
+#include <memory>
+#include "invoker.h"
 
 namespace akm {
+
+struct state {
+        virtual ~state() = default;
+        virtual void run() = 0;
+};
+using state_ptr = std::unique_ptr<state>;
+
+template<class Callable>
+struct state_impl : public state
+{
+        state_impl(Callable&& f) : func(std::forward<Callable>(f)) { }
+        void run() { func(); }
+
+        Callable func;
+};
+
+template<class Callable>
+static state_ptr
+make_state(Callable&& f)
+{
+	using impl = state_impl<Callable>;
+	return state_ptr{ new impl{std::forward<Callable>(f)} };
+}
 
 template<size_t N>
 class thread_pool;
@@ -38,7 +63,7 @@ class thread_pool_base {
 
 	std::mutex mutex;
 	std::condition_variable condition, cv_join;
-	std::queue<std::function<void()>> tasks;
+	std::queue<state_ptr> tasks;
 
 	int flags;
 	int nfree;
@@ -74,9 +99,19 @@ template<class F, class... Args>
 void
 thread_pool_base<N>::thread(F&& f, Args&&... args)
 {
+	static_assert(std::is_invocable_v<std::decay_t<F>, std::decay_t<Args>...>,
+		"akm::thread_pool_base<N> arguments must be invocable after conversion to rvalues"
+	);
 	{
 		std::lock_guard<std::mutex> lock(mutex);
-		tasks.push(std::bind(std::forward<F>(f), std::forward<Args>(args)...));
+		tasks.push(
+			make_state(
+				make_invoker(
+					std::forward<F>(f),
+					std::forward<Args>(args)...
+				)
+			)
+		);
 	}
 	condition.notify_one();
 }
@@ -99,10 +134,10 @@ void
 thread_pool_base<N>::thread_loop()
 {
 	for (;;) {
-		std::function<void()> task;
+		state_ptr task;
 		{
 			std::unique_lock<std::mutex> lock(mutex);
-			condition.wait(lock, [&, this]{ return (flags & STOP) || ! tasks.empty(); });
+			condition.wait(lock, [this]{ return (flags & STOP) || ! tasks.empty(); });
 			if ( (flags & STOP) && tasks.empty() ) {
 				if ( flags & JOIN ) {
 					if ( ++nfree == N ) {
@@ -120,7 +155,7 @@ thread_pool_base<N>::thread_loop()
 							cv_join.notify_one();
 						}
 					}
-					task = []{};
+					task = NULL;
 				} else {
 					if ( ++nexit == N )
 						delete this;
@@ -131,7 +166,8 @@ thread_pool_base<N>::thread_loop()
 				tasks.pop();
 			}
 		}
-		task();
+		if ( task )
+			task->run();
 	}
 }
 

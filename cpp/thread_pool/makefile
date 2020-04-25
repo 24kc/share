@@ -1,4 +1,4 @@
-CC = g++ -Wall -pedantic
+CC = g++ -std=c++17 -Wall -pedantic
 objs =
 exes = 001
 libs = -lpthread
