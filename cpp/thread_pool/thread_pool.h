@@ -174,10 +174,12 @@ thread_pool_base<N>::thread_loop()
 template<size_t N>
 class thread_pool {
   public:
-	thread_pool(): pool_base(new thread_pool_base<N>()) {};
+	thread_pool();
+	thread_pool(nullptr_t); // 构建空线程池
+	thread_pool(thread_pool&& other);
 	thread_pool(const thread_pool&) = delete;
-	thread_pool& operator= (const thread_pool&) = delete;
-	~thread_pool() { pool_base->stop(); };
+	thread_pool& operator= (thread_pool&& other);
+	~thread_pool();
 
 	template<class F, class... Args>
 	void thread(F&& f, Args&&... args)
@@ -192,9 +194,47 @@ class thread_pool {
 	}
 	// 等待所有已提交任务完成
 
+	void swap(thread_pool& other);
+	// 交换2个线程池
+
   private:
 	thread_pool_base<N> *pool_base;
 }; // class thread_pool
+
+template<size_t N>
+thread_pool<N>::thread_pool(): pool_base(new thread_pool_base<N>()) { }
+
+template<size_t N>
+thread_pool<N>::thread_pool(nullptr_t null): pool_base(nullptr) { }
+
+template<size_t N>
+thread_pool<N>::thread_pool(thread_pool&& other)
+{
+	new(this) thread_pool<N>(nullptr);
+	swap(other);
+}
+
+template<size_t N>
+thread_pool<N>::~thread_pool()
+{
+	if ( pool_base )
+		pool_base->stop();
+}
+
+template<size_t N>
+thread_pool<N>&
+thread_pool<N>::operator=(thread_pool&& other)
+{
+	swap(other);
+	return *this;
+}
+
+template<size_t N>
+void
+thread_pool<N>::swap(thread_pool& other)
+{
+	std::swap(pool_base, other.pool_base);
+}
 
 } // namespace akm
 
