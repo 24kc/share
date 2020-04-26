@@ -38,12 +38,12 @@ template<size_t N>
 class thread_pool;
 
 template<size_t N>
-class thread_pool_base {
+class basic_thread_pool {
   private:
-	thread_pool_base();
-	thread_pool_base(const thread_pool_base&) = delete;
-	thread_pool_base& operator= (const thread_pool_base&) = delete;
-	~thread_pool_base() = default;
+	basic_thread_pool();
+	basic_thread_pool(const basic_thread_pool&) = delete;
+	basic_thread_pool& operator= (const basic_thread_pool&) = delete;
+	~basic_thread_pool() = default;
 
 	template<class F, class... Args>
 	void thread(F&& f, Args&&... args);
@@ -71,20 +71,20 @@ class thread_pool_base {
 
 	static constexpr int STOP = 0x1;
 	static constexpr int JOIN = 0x2;
-}; // class thread_pool_base
+}; // class basic_thread_pool
 
 template<size_t N>
-thread_pool_base<N>::thread_pool_base()
+basic_thread_pool<N>::basic_thread_pool()
 {
 	flags = 0;
 	nexit = 0;
 	for (size_t i=0; i<N; ++i)
-		threads[i] = std::thread(&thread_pool_base<N>::thread_loop, this);
+		threads[i] = std::thread(&basic_thread_pool<N>::thread_loop, this);
 }
 
 template<size_t N>
 void
-thread_pool_base<N>::stop()
+basic_thread_pool<N>::stop()
 {
 	std::lock_guard<std::mutex> lock(mutex);
 	for (size_t i=0; i<N; ++i)
@@ -97,10 +97,10 @@ thread_pool_base<N>::stop()
 template<size_t N>
 template<class F, class... Args>
 void
-thread_pool_base<N>::thread(F&& f, Args&&... args)
+basic_thread_pool<N>::thread(F&& f, Args&&... args)
 {
 	static_assert(std::is_invocable_v<std::decay_t<F>, std::decay_t<Args>...>,
-		"akm::thread_pool_base<N> arguments must be invocable after conversion to rvalues"
+		"akm::basic_thread_pool<N> arguments must be invocable after conversion to rvalues"
 	);
 	{
 		std::lock_guard<std::mutex> lock(mutex);
@@ -118,7 +118,7 @@ thread_pool_base<N>::thread(F&& f, Args&&... args)
 
 template<size_t N>
 void
-thread_pool_base<N>::join()
+basic_thread_pool<N>::join()
 {
 	std::unique_lock<std::mutex> lock(mutex);
 
@@ -131,7 +131,7 @@ thread_pool_base<N>::join()
 
 template<size_t N>
 void
-thread_pool_base<N>::thread_loop()
+basic_thread_pool<N>::thread_loop()
 {
 	for (;;) {
 		state_ptr task;
@@ -184,13 +184,13 @@ class thread_pool {
 	template<class F, class... Args>
 	void thread(F&& f, Args&&... args)
 	{
-		pool_base->thread(std::forward<F>(f), std::forward<Args>(args)...);
+		basic_pool->thread(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 	// 向线程池提交任务
 
 	void join()
 	{
-		pool_base->join();
+		basic_pool->join();
 	}
 	// 等待所有已提交任务完成
 
@@ -198,14 +198,14 @@ class thread_pool {
 	// 交换2个线程池
 
   private:
-	thread_pool_base<N> *pool_base;
+	basic_thread_pool<N> *basic_pool;
 }; // class thread_pool
 
 template<size_t N>
-thread_pool<N>::thread_pool(): pool_base(new thread_pool_base<N>()) { }
+thread_pool<N>::thread_pool(): basic_pool(new basic_thread_pool<N>()) { }
 
 template<size_t N>
-thread_pool<N>::thread_pool(nullptr_t null): pool_base(nullptr) { }
+thread_pool<N>::thread_pool(nullptr_t null): basic_pool(nullptr) { }
 
 template<size_t N>
 thread_pool<N>::thread_pool(thread_pool&& other)
@@ -217,8 +217,8 @@ thread_pool<N>::thread_pool(thread_pool&& other)
 template<size_t N>
 thread_pool<N>::~thread_pool()
 {
-	if ( pool_base )
-		pool_base->stop();
+	if ( basic_pool )
+		basic_pool->stop();
 }
 
 template<size_t N>
@@ -233,7 +233,7 @@ template<size_t N>
 void
 thread_pool<N>::swap(thread_pool& other)
 {
-	std::swap(pool_base, other.pool_base);
+	std::swap(basic_pool, other.basic_pool);
 }
 
 } // namespace akm
