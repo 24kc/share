@@ -208,9 +208,8 @@ template<size_t N>
 thread_pool<N>::thread_pool(nullptr_t null): basic_pool(nullptr) { }
 
 template<size_t N>
-thread_pool<N>::thread_pool(thread_pool&& other)
+thread_pool<N>::thread_pool(thread_pool&& other): thread_pool<N>(nullptr)
 {
-	new(this) thread_pool<N>(nullptr);
 	swap(other);
 }
 
