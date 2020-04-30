@@ -3,6 +3,7 @@
 
 namespace akm {
 
+// 辅助检查Mean模板参数
 template<int... nums>
 struct Mean_check : std::bool_constant<(nums && ...)> { };
 
@@ -14,15 +15,15 @@ class Mean {
 	Mean() : data{0}, count{0} { }
 
 	void update(int);
-	auto get_means(int index) -> std::vector<double>&;
+	auto get_means(int index) -> std::vector<double>&; // 返回第index个均值数组
 
 	static constexpr int N = sizeof...(nums);
-	static constexpr int T[N] = { nums... };
+	static constexpr int T[N] = { nums... }; // 记录模板参数
 
   private:
-	std::vector<double> ave[N];
-	double data[N];
-	int count;
+	std::vector<double> ave[N]; // N个均值数组
+	double data[N]; // 各均值数组不满周期的数的和
+	int count; // 调用update的次数
 };
 
 template<int... nums>
